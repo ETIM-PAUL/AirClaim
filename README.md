@@ -6,7 +6,9 @@ AirClaim represents a paradigm shift in the flight insurance industry, leveragin
 
 At its foundation, AirClaim utilizes smart contracts deployed on the Flare network, specifically on the Coston2 testnet as indicated in the project configuration. The primary contract, `insuredFlightsAgency.sol`, manages the entire insurance lifecycle from insurance creation to claims processing.
 
-The system integrates with Flare's Data Contract (FDC) protocol, which serves as a decentralized oracle network providing verified real-time flight data. This integration is crucial as it allows the platform to access trusted external data about flight statuses without relying on centralized authorities.
+The system integrates with Flare's Data Contract (FDC) protocol and AviationStack API, which serves as a decentralized oracle network providing verified real-time flight data. This integration is crucial as it allows the platform to access trusted external data about flight statuses without relying on centralized authorities.
+
+Currently the system delayed insurance time is set to 30 minutes, 
 
 ## Insurance Mechanism
 
@@ -17,7 +19,7 @@ The insurance process begins when a user insures a flight by calling the `insure
 - Flight price
 - Proof of flight status from the FDC
 
-The premium calculation follows a straightforward formula: 10% of the flight price multiplied by the number of passengers, plus a base insurance fee. This transparent pricing model ensures users understand exactly what they're paying for.
+The premium calculation follows a straightforward formula: 10% of the flight price multiplied by the number of passengers, plus a base insurance fee. This transparent pricing model ensures users understand exactly the insurance system works.
 
 When a flight is insured, the system creates an `InsuredFlight` struct containing all relevant flight details, including departure and arrival airports, flight date, and initial status. Each insured flight receives a unique ID for tracking purposes.
 
@@ -29,7 +31,7 @@ The verification process works as follows:
 1. A user requests flight status verification
 2. The system fetches data through Flare's Data Contract protocol
 3. The data is verified using cryptographic proofs
-4. If the flight is delayed beyond the threshold (default 30 minutes), the status is updated
+4. If the flight is delayed beyond the threshold (default 30 minutes), the status is updated insurance claim is triggered for passengers to claim their insurances
 
 This monitoring can occur at 10-minute intervals, ensuring timely updates while preventing excessive API calls.
 
