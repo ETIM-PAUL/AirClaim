@@ -1,0 +1,38 @@
+ /* Add these styles to your existing CSS */
+
+.dashboard-card {
+    background: white;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    transition: transform 0.2s;
+  }
+  
+  .dashboard-card:hover {
+    transform: translateY(-2px);
+  }
+  
+  .insure-button {
+    background: #FFD700;
+    color: #4C2AA0;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+  }
+  
+  .insure-button:hover {
+    background: #FFC700;
+  }
+  
+  .view-more-button {
+    border: 2px solid #4C2AA0;
+    color: #4C2AA0;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+  }
+  
+  .view-more-button:hover {
+    background: #4C2AA0;
+    color: white;
+  }

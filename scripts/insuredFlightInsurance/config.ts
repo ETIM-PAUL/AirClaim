@@ -1,0 +1,1 @@
+export const insuredFlightsAgencyAddress = "0x9C29563E69bCbA9DD364aC2F5E4731214D9B90Aa";

@@ -22,7 +22,7 @@ const {
   VERIFIER_URL_TESTNET,
   VERIFIER_API_KEY_TESTNET,
   JQ_VERIFIER_URL_TESTNET,
-  JQ_VERIFIER_API_KEY,
+  JQ_VERIFIER_API_KEY_TESTNET,
   COSTON2_DA_LAYER_URL,
 } = process.env;
 
@@ -42,7 +42,7 @@ const requests: AttestationRequest[] = [
     source: "jsonApi",
     sourceIdBase: "WEB2",
     verifierUrlBase: JQ_VERIFIER_URL_TESTNET!,
-    verifierApiKey: JQ_VERIFIER_API_KEY!,
+    verifierApiKey: JQ_VERIFIER_API_KEY_TESTNET!,
     urlTypeBase: "",
     data: {
       apiUrl:
@@ -272,6 +272,6 @@ async function main() {
   console.log("Sufficient reserves:", sufficientReserves);
 }
 
-main().then((data) => {
+main().then(() => {
   process.exit(0);
 });

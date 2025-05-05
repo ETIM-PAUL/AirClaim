@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+html,
+body {
+  @apply bg-white dark:bg-gray-950;
+
+  @media (prefers-color-scheme: dark) {
+    color-scheme: dark;
+  }
+}
+
+.hero-gradient {
+  background: linear-gradient(135deg, #5D3FD3 0%, #4C2AA0 100%);
+}
+
+.plane-background {
+  background-image: url("data:image/svg+xml,%3Csvg width='400' height='400' viewBox='0 0 400 400' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M320 180C320 251.797 261.797 310 190 310C118.203 310 60 251.797 60 180C60 108.203 118.203 50 190 50C261.797 50 320 108.203 320 180Z' fill='%236B46C1' fill-opacity='0.1'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 50px top 50px;
+}
+
+.nav-button {
+  font-size: 14px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.primary-button {
+  background-color: #F8FAFC;
+  color: #553C9A;
+}
+
+.secondary-button {
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  color: #F8FAFC;
+}
+
+.get-started-button {
+  background-color: #4C2AA0;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.get-started-button:hover {
+  background-color: #3C1F80;
+}
+
+.card {
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.inner-card {
+  background: #F8FAFC;
+  border-radius: 16px;
+}
+
+/* Hide scrollbar for Chrome, Safari, and Opera */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge, and Firefox */
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
