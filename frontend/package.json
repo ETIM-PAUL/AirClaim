@@ -3,17 +3,19 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "react-router build",
     "dev": "react-router dev",
-    "start": "react-router-serve ./build/server/index.js",
-    "typecheck": "react-router typegen && tsc"
+    "build": "react-router build",
+    "preview": "react-router preview",
+    "start": "node build/server/index.js",
+    "typecheck": "tsc"
   },
   "dependencies": {
+    "@react-router/dev": "^7.5.3",
     "@react-router/node": "^7.5.1",
     "@react-router/serve": "^7.5.1",
-    "@remix-run/dev": "^2.16.5",
     "@reown/appkit": "^1.7.3",
     "@reown/appkit-adapter-ethers": "^1.7.3",
+    "@tailwindcss/vite": "^4.1.5",
     "@types/react-tag-input": "^6.6.6",
     "ethers": "^6.13.7",
     "isbot": "^5.1.17",
@@ -30,14 +32,15 @@
     "web3": "^4.16.0"
   },
   "devDependencies": {
-    "@react-router/dev": "^7.5.1",
-    "@tailwindcss/vite": "^4.0.0",
+    "@tailwindcss/postcss": "^4.1.5",
     "@types/node": "^20",
     "@types/react": "^19.0.1",
     "@types/react-dom": "^19.0.1",
+    "@vitejs/plugin-react": "^4.4.1",
+    "autoprefixer": "^10.4.21",
     "dotenv": "^16.4.7",
-    "react-router-devtools": "^1.1.0",
-    "tailwindcss": "^4.0.0",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^4.1.5",
     "typescript": "^5.7.2",
     "vite": "^5.4.11",
     "vite-tsconfig-paths": "^5.1.4"
