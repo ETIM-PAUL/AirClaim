@@ -98,7 +98,6 @@ const Dashboard = () => {
       insuranceFlightId: flight[12],
     }));
     
-    console.log(flightsAsObjects);
     // Simulate a delay (e.g., 2 seconds)
     await new Promise((resolve) => setTimeout(resolve, 2000));
   
