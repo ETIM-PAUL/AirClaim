@@ -11,6 +11,7 @@
   "dependencies": {
     "@react-router/node": "^7.5.1",
     "@react-router/serve": "^7.5.1",
+    "@remix-run/dev": "^2.16.5",
     "@reown/appkit": "^1.7.3",
     "@reown/appkit-adapter-ethers": "^1.7.3",
     "@types/react-tag-input": "^6.6.6",
