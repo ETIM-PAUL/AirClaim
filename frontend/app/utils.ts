@@ -1,4 +1,4 @@
-export const insuredFlightsAgencyAddress = "0x9c29563e69bcba9dd364ac2f5e4731214d9b90aa";
+export const insuredFlightsAgencyAddress = "0x5F8912015361423162ee4c06bea4D0c32fbD5692";
   
   export const shortenAddress = (address: string): string => {
       if (!address || address.length < 10) return address; // Handle invalid or short addresses

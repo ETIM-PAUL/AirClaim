@@ -168,7 +168,7 @@ async function prepareUrl(accessKey: string, flightNo: string, airlineIcao: stri
           data: decodedResponse
         };
         
-        console.log("Proof object created");
+        console.log("Proof object created", proofObject);
         console.log("Flight status:", decodedResponse.flight_status);
         console.log("Flight delayed time:", decodedResponse.flight_delayed_time);
         
@@ -185,7 +185,7 @@ async function prepareUrl(accessKey: string, flightNo: string, airlineIcao: stri
           }
         ).catch((e: any) => {
           console.error("Gas estimation failed:", e.message);
-          return 3000000; // Fallback gas limit
+          return e.reason;
         });
         
         console.log("Estimated gas:", gasEstimate);
@@ -278,9 +278,9 @@ async function prepareUrl(accessKey: string, flightNo: string, airlineIcao: stri
     "0x9d4eF81F5225107049ba08F69F598D97B31ea644",
     "0x1b6e16403b06a51C42Ba339E356a64fE67348e92"
   ];
-  const accessKey = "ef075e2c473a222c169d0e00a18448c9";
-  const flightNo = "6662";
-  const airlineIcao = "AAL";
+  const accessKey = "7ebf708bbced8cbfedc67a44e19721b7";
+  const flightNo = "1233";
+  const airlineIcao = "AXB";
 
 
 main(accessKey, flightNo, airlineIcao, flightPrice, passengers).then(() => {

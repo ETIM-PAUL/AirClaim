@@ -128,54 +128,81 @@ async function retrieveDataAndProof(
     return await retrieveDataAndProofBase(url, abiEncodedRequest, roundId, ethersProvider);
 }
 
-async function updateFlight(
+async function addFlight(
     agency: any,
+    aircraft_icao: string,
+    flight_no: string,
+    passengers: string[],
+    flight_price: string,
     proof: any,
-    flightId: number,
+    walletProvider: any
 ) {
     const responseType: any = IJsonApiVerificationAbi.abi[0].inputs[0].components[1];
 
     try {
     // Decode the response
     const decodedResponse = web3.eth.abi.decodeParameter(
-      responseType,
-      proof.response_hex
-  );
+        responseType,
+        proof.response_hex
+    );
 
     const proofObject = {
         merkleProof: proof.proof,
         data: decodedResponse
       };
+    
 
-    const tx = await agency.checkFlightDelay(proofObject, flightId);
+    const requiredAmount = await agency.getCostOfInsurance(flight_price, passengers);
+
+    // Try with a much lower gas limit first to test
+    const gasEstimate = await agency.insureFlight.estimateGas(
+        aircraft_icao,
+        flight_no,
+        passengers,
+        flight_price,
+        proofObject,
+        {
+          value: requiredAmount.toString(),
+          from: await walletProvider.getAddress()
+        }
+      ).catch((e: any) => {
+        console.error("Gas estimation failed:", e.message);
+        return 3000000; // Fallback gas limit
+      });
+
+      // Use 1.5x the estimated gas to be safe
+      const gasLimit = Number(gasEstimate) * 1.5;
+      console.log("Using gas limit:", gasLimit);
+
+    const tx = await agency.insureFlight(aircraft_icao, flight_no, passengers, flight_price, proofObject, {
+        value: requiredAmount.toString(),
+        from: await walletProvider.getAddress(),
+        gas: gasLimit
+      });
     await tx.wait();
     console.log("tx", tx)
-    return "Flight updated successfully";
+    return "Flight insured successfully";
     } catch (error: any) {
         console.log("error", error)
-        return error;
+        return error.reason;
     }
 }
 
 
-export async function checkFlightDetails(flightNo: string, airlineIcao: string, flightId: number, walletProvider: any) {
+export async function insureFlight(aircraft_icao: string, flight_no: string, flight_price: string, passengers: string[], walletProvider: any) {
     try {
         const ethersProvider = new BrowserProvider(walletProvider as any);
         const signer = await ethersProvider.getSigner();
         // The Contract object
         const insuredFlightsAgencyContract = new ethers.Contract(insuredFlightsAgencyAddress, insuredFlightsAgencyAbi.abi, signer);
-
-        // const insuredFlightId = await insuredFlightsAgencyContract.getInsuredFlightId(flightId);
-        // console.log("Insured flight ID:", insuredFlightId);
   
-        const apiUrl = await prepareUrl(FLIGHT_API_KEY!, flightNo, airlineIcao);
+        const apiUrl = await prepareUrl(FLIGHT_API_KEY!, flight_no, aircraft_icao);
 
         const data = await prepareAttestationRequest(apiUrl, postprocessJq, abiSignature);
         const roundId = await submitAttestationRequest(signer, data.abiEncodedRequest, ethersProvider);
         const proof = await retrieveDataAndProof(data.abiEncodedRequest, roundId, walletProvider);
-
         try {
-            await updateFlight(insuredFlightsAgencyContract, proof, flightId);
+            await addFlight(insuredFlightsAgencyContract, aircraft_icao, flight_no, passengers, flight_price, proof, signer);
             return "Flight updated successfully";
         } catch (error) {
             console.log("error", error)

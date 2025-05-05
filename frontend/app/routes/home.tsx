@@ -33,6 +33,7 @@ export default function Home() {
     // Call the claimInsurance function
     const tx = await insuredFlightsAgencyContract.claimInsurance(formData.flightID);
     await tx.wait();
+    setIsModalOpen(false);
     toast.success('Insurance Claimed Successfully');
     setLoading(false);
     } catch (error: any) {

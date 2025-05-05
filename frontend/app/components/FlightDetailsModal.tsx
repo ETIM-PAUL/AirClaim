@@ -12,6 +12,7 @@ import { ethers } from 'ethers';
 interface FlightDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  fetchMockFlights: () => void;
   flight: {
     aircraftCode: string;
     flightNumber: string;
@@ -20,7 +21,7 @@ interface FlightDetailsModalProps {
   };
 }
 
-const FlightDetailsModal: React.FC<FlightDetailsModalProps> = ({ isOpen, onClose, flight }:any) => {
+const FlightDetailsModal: React.FC<FlightDetailsModalProps> = ({ isOpen, onClose, flight, fetchMockFlights }:any) => {
   if (!isOpen) return null;
   const [isLoading, setIsLoading] = useState(false);
   const { walletProvider } = useAppKitProvider("eip155");
@@ -32,7 +33,8 @@ const FlightDetailsModal: React.FC<FlightDetailsModalProps> = ({ isOpen, onClose
       setIsLoading(true);
       const result = await checkFlightDetails(flight.flightNumber, flight.aircraftIcao, flight.flightId, walletProvider);
       toast.success(result as any);
-      console.log("result",result)
+      fetchMockFlights();
+      onClose();
       setIsLoading(false);
     } catch (error: any) {
       toast.error(error);

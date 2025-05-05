@@ -137,10 +137,6 @@ contract insuredFlightsAgency {
     function claimInsurance(uint insuredFlightId) external {
         InsuredFlight memory insuredFlight = _insuredFlight[insuredFlightId];
 
-        require(
-            keccak256(abi.encodePacked(insuredFlight.status)) != keccak256(abi.encodePacked("scheduled")), 
-            "Insurance coverage not triggered"
-        );
         require(insuredFlightPassengersStatus[insuredFlightId][msg.sender], 
             "Passenger not insured OR Insurance already redeemed"
         );

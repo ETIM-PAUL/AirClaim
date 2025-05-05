@@ -10,6 +10,8 @@ import { useAppKitProvider, useAppKitAccount } from "@reown/appkit/react";
 import { BrowserProvider, ethers } from "ethers";
 import { insuredFlightsAgencyAddress } from '~/utils';
 import insuredFlightsAgencyAbi from 'insuredFlightsAgency.json';
+import { toast } from 'react-toastify';
+import { insureFlight } from 'scripts/insureFlight';
 
 interface FlightFormData {
   aircraftCode: string;
@@ -38,6 +40,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { address, isConnected } = useAppKitAccount();
   const { walletProvider } = useAppKitProvider("eip155");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   
   const handleDisconnect = () => {
     disconnect();
@@ -48,18 +51,25 @@ const Dashboard = () => {
     setIsModalOpen(true);
   };
   
-  const handleModalSubmit = (formData: FlightFormData) => {
-    
-    const newFlight = {
-      id: flights.length + 1,
-      aircraftCode: formData.aircraftCode,
-      flightNumber: formData.flightNumber,
-      insurancePrice: formData.insurancePrice,
-      passengerWalletAddresses: formData.passengerWalletAddresses,
+  const handleModalSubmit = async (formData: FlightFormData) => {
+    try {
+      setIsLoading(true);
+      const newFlight = {
+        aircraftCode: formData.aircraftCode,
+        flightNumber: formData.flightNumber,
+        flightPrice: (formData.insurancePrice * 1e18).toFixed(0),
+        passengerWalletAddresses: formData.passengerWalletAddresses,
+      }
+      console.log("newFlight", newFlight)
+      const result = await insureFlight(newFlight.aircraftCode, newFlight.flightNumber, newFlight.flightPrice, newFlight.passengerWalletAddresses, walletProvider);
+      loadFlights();
+      toast.success(result as any);
+
+    } catch (error:any) {
+      toast.error(error);
+      console.log("error",error)
+      setIsLoading(false);
     }
-    
-    setFlights([...flights, newFlight]);
-    // Handle form submission (e.g., send data to the blockchain)
   };
   
   const fetchMockFlights = async (): Promise<Flight[]> => {
@@ -67,7 +77,6 @@ const Dashboard = () => {
     if (!isConnected) navigate('/');
 
     const ethersProvider = new BrowserProvider(walletProvider as any);
-    console.log('ethersProvider', ethersProvider);
 
     // The Contract object
     const insuredFlightsAgencyContract = new ethers.Contract(insuredFlightsAgencyAddress, insuredFlightsAgencyAbi.abi, ethersProvider);
@@ -141,7 +150,7 @@ const Dashboard = () => {
 
           <button
             onClick={handleInsureFlight}
-            className="px-6 py-3 text-center bg-[#FFD700] text-[#4C2AA0] font-semibold rounded-lg hover:bg-[#FFC700] transition-colors"
+            className="px-6 py-3 cursor-pointer text-center bg-[#FFD700] text-[#4C2AA0] font-semibold rounded-lg hover:bg-[#FFC700] transition-colors"
           >
             Insure Flight
           </button>
@@ -159,7 +168,7 @@ const Dashboard = () => {
               ))}
             </ul>
           ) : (
-            <div className="">
+            <div className="flex flex-wrap gap-6">
               {flights.length > 0 ? (
                 flights.map((flight:any) => (
                   <div key={Number(flight.insuranceFlightId)} className="max-w-sm gap-6">
@@ -202,6 +211,7 @@ const Dashboard = () => {
         <FlightDetailsModal
           isOpen={isDetailsModalOpen}
           onClose={handleCloseDetailsModal}
+          fetchMockFlights={fetchMockFlights}
           flight={selectedFlight}
         />
       )}

@@ -23,7 +23,7 @@ const delimiters = [KeyCodes.comma, KeyCodes.enter];
 const InsureFlightModal: React.FC<InsureFlightModalProps> = ({ isOpen, onClose, onSubmit }) => {
   const [aircraftCode, setAircraftCode] = useState('');
   const [flightNumber, setFlightNumber] = useState('');
-  const [insurancePrice, setInsurancePrice] = useState<number | ''>('');
+  const [insurancePrice, setInsurancePrice] = useState<any>('');
   const [passengerWalletAddresses, setPassengerWalletAddresses] = useState<Tag[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -59,9 +59,10 @@ const InsureFlightModal: React.FC<InsureFlightModalProps> = ({ isOpen, onClose, 
         return;
       }
 
-      await onSubmit(formData);
-      
-      // Show success alert after 100ms
+      try {
+        // Submit form data
+        await onSubmit(formData);
+        // Show success alert after 100ms
       setTimeout(() => {
         Swal.fire({
           icon: 'success',
@@ -79,6 +80,12 @@ const InsureFlightModal: React.FC<InsureFlightModalProps> = ({ isOpen, onClose, 
         });
         onClose();
       }, 1000);
+      } catch (error) {
+        setError('An error occurred while submitting the form');
+        console.error(error);
+        setIsSubmitting(false);
+      }
+
 
     } catch (error) {
       setError('An error occurred while submitting the form');
@@ -109,7 +116,7 @@ const InsureFlightModal: React.FC<InsureFlightModalProps> = ({ isOpen, onClose, 
             <input
               className="w-full p-2 text-black border border-black rounded"
               value={aircraftCode}
-              placeholder='Airline ICAO code in the form AA'
+              placeholder='Airline ICAO code'
               onChange={e => setAircraftCode(e.target.value)}
               required
             />
@@ -119,7 +126,7 @@ const InsureFlightModal: React.FC<InsureFlightModalProps> = ({ isOpen, onClose, 
             <input
               className="w-full p-2  text-black border border-black rounded"
               value={flightNumber}
-              placeholder='FLight number in the form AA123'
+              placeholder='Flight number in the form AA123'
               onChange={e => setFlightNumber(e.target.value)}
               required
             />
@@ -133,8 +140,6 @@ const InsureFlightModal: React.FC<InsureFlightModalProps> = ({ isOpen, onClose, 
               placeholder='Enter ticket price in ETH'
               onChange={e => setInsurancePrice(e.target.value)}
               required
-              min="0.01"
-              step="0.01"
             />
           </div>
           <div>
