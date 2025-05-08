@@ -12,8 +12,7 @@ import type { Route } from "./+types/root";
 import "./app.css";
 import { createAppKit, useAppKitAccount } from "@reown/appkit/react";
 import { EthersAdapter } from "@reown/appkit-adapter-ethers";
-import { mainnet } from "@reown/appkit/networks";
-import { useEffect } from "react";
+import { AppKitNetwork, mainnet } from "@reown/appkit/networks";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -43,7 +42,7 @@ const metadata = {
 
 // 3. Set the networks
 const customNetwork = {
-  id: 114, // Replace with your chain ID
+  id: "0x72", // Replace with your chain ID
   name: "Coston2 Network", // Replace with your network name
   network: "coston2", // Replace with your network identifier
   nativeCurrency: {
@@ -64,7 +63,7 @@ const customNetwork = {
   },
 };
 
-const networks = [mainnet, customNetwork];
+const networks: any = [mainnet, customNetwork];
 
 // 4. Create Ethers Adapter
 const ethersAdapter = new EthersAdapter(
@@ -77,49 +76,16 @@ createAppKit({
   networks,
   projectId,
   metadata,
+  allWallets: "HIDE",
   features: {
     analytics: true, // Optional - defaults to your Cloud configuration
   },
 });
 
-const switchToCustomNetwork = async (): Promise<void> => {
-  if (!window.ethereum) {
-    console.error("MetaMask is not installed");
-    return;
-  }
-
-  try {
-    // Try to switch to the custom network
-    await window.ethereum.request({
-      method: "wallet_switchEthereumChain",
-      params: [{ chainId: customNetwork.chainId }],
-    });
-  } catch (error: any) {
-    // If the network is not added, add it
-    if (error.code === 4902) {
-      try {
-        await window.ethereum.request({
-          method: "wallet_addEthereumChain",
-          params: [customNetwork],
-        });
-      } catch (addError: any) {
-        console.error("Failed to add the network:", addError);
-      }
-    } else {
-      console.error("Failed to switch the network:", error);
-    }
-  }
-};
 
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const { isConnected, address } = useAppKitAccount();
-  // Auto-connect if cached provider exists
-  useEffect(() => {
-    if (isConnected) {
-      switchToCustomNetwork(); // Force switch to the custom network
-    }
-  }, [isConnected, address]);
+
   return (
     <html lang="en">
       <head>

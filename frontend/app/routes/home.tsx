@@ -15,7 +15,7 @@ export default function Home() {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { open } = useAppKit();
-  const { address, isConnected } = useAppKitAccount();
+  const { isConnected } = useAppKitAccount();
   const { disconnect } = useDisconnect();
 
   const handleOpenModal = () => setIsModalOpen(true);
@@ -49,23 +49,29 @@ export default function Home() {
     navigate('/dashboard');
   };
 
-  const switchToCustomNetwork = async (): Promise<void> => {
-    if (!window.ethereum) {
+  
+  const switchToCustomNetwork = async () => {
+    let windowEthereum = window.ethereum as any;
+    if (!windowEthereum) {
       console.error("MetaMask is not installed");
+      return;
+    }
+    if(windowEthereum.chainId === "0x72"){
+      console.log("window.ethereum",windowEthereum.chainId)
       return;
     }
   
     try {
       // Try to switch to the custom network
-      await window.ethereum.request({
+      await windowEthereum.request({
         method: "wallet_switchEthereumChain",
-        params: [{ chainId: customNetwork.chainId }],
+        params: [{ chainId: "0x72" }],
       });
     } catch (error: any) {
       // If the network is not added, add it
       if (error.code === 4902) {
         try {
-          await window.ethereum.request({
+          await windowEthereum.request({
             method: "wallet_addEthereumChain",
             params: [customNetwork],
           });
@@ -80,8 +86,8 @@ export default function Home() {
 
   const handleConnectWallet = async () => {
     await open(); // Open the Reown AppKit modal
-    await switchToCustomNetwork(); // Force switch to the custom network
   };
+
 
   return (
     <div className="min-h-screen hero-gradient plane-background">
@@ -98,12 +104,21 @@ export default function Home() {
             {isConnected ? (
               <div className="flex gap-4">
                 <div>
-                  <button 
+                {window?.ethereum && window.ethereum?.chainId === "0x72" ? (
+                    <button 
                     onClick={() => disconnect()} 
                     className="nav-button primary-button hover:scale-105 transition-transform duration-200"
                   >
                     Disconnect Wallet
                   </button>
+                  ) : (
+                    <button 
+                    onClick={() => switchToCustomNetwork()} 
+                    className="nav-button bg-red-500 hover:scale-105 transition-transform duration-200"
+                  >
+                    Switch Network
+                  </button>
+                  )}
                 </div>
                 <div>
                   <button 
