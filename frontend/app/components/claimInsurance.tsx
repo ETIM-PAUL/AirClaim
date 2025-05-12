@@ -57,7 +57,7 @@ const CustomModal: React.FC<InsureFlightModalProps> = ({ isOpen, onClose, onSubm
           <h2 className="text-xl text-black font-bold mb-4">Claim Flight Insurance</h2>
           {error && <div className="text-red-600 mb-2">Please note that if the flight</div>}  
           <div>
-          <div className="text-red-600 my-2">Predict a number between 1-20 to stand a chance of winning 1 C2FLR. If your prediction is wrong, you forfeit 50% of your insurance.</div>
+          <div className="text-red-600 my-2">Predict a number between 1-20 to stand a chance of winning 0.5 C2FLR. If your prediction is wrong, you forfeit 50% of your insurance.</div>
             <label className="block  text-black text-sm font-medium mb-1">Prediction</label>
             <input
               className="w-full p-2  text-black border border-black rounded"
