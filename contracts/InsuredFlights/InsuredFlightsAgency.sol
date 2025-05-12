@@ -72,7 +72,7 @@ contract insuredFlightsAgency {
     function checkFlightDelay(IJsonApi.Proof calldata data, uint256 insuredFlightId) external {
         InsuredFlight memory insuredFlight = _insuredFlight[insuredFlightId];
         require(block.timestamp - insuredFlight.lastChecked > 600, "Flight check is at 10 minutes interval");
-        //require(isJsonApiProofValid(data), "Invalid proof");
+        require(isJsonApiProofValid(data), "Invalid proof");
 
         DataTransportObject memory dto = abi.decode(data.data.responseBody.abi_encoded_data, (DataTransportObject));
 
@@ -104,7 +104,7 @@ contract insuredFlightsAgency {
     function insureFlight(string memory aircraft_icao, string memory flight_no, address[] memory passengers, uint256 flight_price, IJsonApi.Proof calldata data) external payable {
         require(msg.value == ((passengers.length * flight_price * 10) / 100 + INSURANCE_PRICE), "Invalid amount");
 
-        //require(isJsonApiProofValid(data), "Invalid proof");
+        require(isJsonApiProofValid(data), "Invalid proof");
 
         DataTransportObject memory dto = abi.decode(data.data.responseBody.abi_encoded_data, (DataTransportObject));
 
