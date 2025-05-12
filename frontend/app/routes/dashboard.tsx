@@ -210,7 +210,7 @@ const Dashboard = () => {
         <FlightDetailsModal
           isOpen={isDetailsModalOpen}
           onClose={handleCloseDetailsModal}
-          fetchMockFlights={fetchMockFlights}
+          fetchMockFlights={loadFlights}
           flight={selectedFlight}
         />
       )}

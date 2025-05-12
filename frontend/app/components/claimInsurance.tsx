@@ -4,6 +4,7 @@ import '../styles/date.css';
 interface FlightFormData {
   flightNumber: string;
   flightID: number;
+  predictedNumber: number;
 }
 
 interface InsureFlightModalProps {
@@ -17,6 +18,7 @@ interface InsureFlightModalProps {
 const CustomModal: React.FC<InsureFlightModalProps> = ({ isOpen, onClose, onSubmit, loading }) => {
   const [flightNumber, setFlightNumber] = useState('');
   const [flightID, setFlightID] = useState<number>();
+  const [predictedNumber, setPredictedNumber] = useState<number>();
   const [error, setError] = useState<string>("");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -26,6 +28,7 @@ const CustomModal: React.FC<InsureFlightModalProps> = ({ isOpen, onClose, onSubm
     const formData: FlightFormData = {
       flightNumber,
       flightID,
+      predictedNumber,
     } as FlightFormData;
 
     if (
@@ -52,7 +55,19 @@ const CustomModal: React.FC<InsureFlightModalProps> = ({ isOpen, onClose, onSubm
           onSubmit={handleSubmit}
         >
           <h2 className="text-xl text-black font-bold mb-4">Claim Flight Insurance</h2>
-          {error && <div className="text-red-600 mb-2">{error}</div>}  
+          {error && <div className="text-red-600 mb-2">Please note that if the flight</div>}  
+          <div>
+          <div className="text-red-600 my-2">Predict a number between 1-20 to stand a chance of winning 1 C2FLR. If your prediction is wrong, you forfeit 50% of your insurance.</div>
+            <label className="block  text-black text-sm font-medium mb-1">Prediction</label>
+            <input
+              className="w-full p-2  text-black border border-black rounded"
+              value={predictedNumber}
+              placeholder='Leave blank if you do not want to predict'
+              type='number'
+              onChange={e => setPredictedNumber(Number(e.target.value))}
+              required
+            />
+          </div>
           <div>
             <label className="block  text-black text-sm font-medium mb-1">InsuranceFlight ID</label>
             <input
@@ -75,6 +90,7 @@ const CustomModal: React.FC<InsureFlightModalProps> = ({ isOpen, onClose, onSubm
               required
             />
           </div>
+
           <div className="flex justify-end space-x-2 mt-4">
           <button
               type="button"

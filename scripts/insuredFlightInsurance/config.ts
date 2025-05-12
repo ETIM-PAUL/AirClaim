@@ -1,1 +1,1 @@
-export const insuredFlightsAgencyAddress = "0x5F8912015361423162ee4c06bea4D0c32fbD5692";
+export const insuredFlightsAgencyAddress = "0x51bdDF6cF2a4D0273EA1caC7c70C8b5Ea7B064a6";

@@ -128,45 +128,11 @@ async function retrieveDataAndProof(
     return await retrieveDataAndProofBase(url, abiEncodedRequest, roundId, ethersProvider);
 }
 
-async function updateFlight(
-    agency: any,
-    proof: any,
-    flightId: number,
-) {
-    const responseType: any = IJsonApiVerificationAbi.abi[0].inputs[0].components[1];
 
-    try {
-    // Decode the response
-    const decodedResponse = web3.eth.abi.decodeParameter(
-      responseType,
-      proof.response_hex
-  );
-
-    const proofObject = {
-        merkleProof: proof.proof,
-        data: decodedResponse
-      };
-
-    const tx = await agency.checkFlightDelay(proofObject, flightId);
-    await tx.wait();
-    console.log("tx", tx)
-    return "Flight updated successfully";
-    } catch (error: any) {
-        console.log("error", error)
-        return error;
-    }
-}
-
-
-export async function checkFlightDetails(flightNo: string, airlineIcao: string, flightId: number, walletProvider: any) {
+export async function checkFlightDetails(flightNo: string, airlineIcao: string, walletProvider: any) {
     try {
         const ethersProvider = new BrowserProvider(walletProvider as any);
         const signer = await ethersProvider.getSigner();
-        // The Contract object
-        const insuredFlightsAgencyContract = new ethers.Contract(insuredFlightsAgencyAddress, insuredFlightsAgencyAbi.abi, signer);
-
-        // const insuredFlightId = await insuredFlightsAgencyContract.getInsuredFlightId(flightId);
-        // console.log("Insured flight ID:", insuredFlightId);
   
         const apiUrl = await prepareUrl(FLIGHT_API_KEY!, flightNo, airlineIcao);
 
@@ -174,13 +140,25 @@ export async function checkFlightDetails(flightNo: string, airlineIcao: string, 
         const roundId = await submitAttestationRequest(signer, data.abiEncodedRequest, ethersProvider);
         const proof = await retrieveDataAndProof(data.abiEncodedRequest, roundId, walletProvider);
 
-        try {
-            await updateFlight(insuredFlightsAgencyContract, proof, flightId);
-            return "Flight updated successfully";
-        } catch (error) {
-            console.log("error", error)
-            return error;
-        }
+            const responseType: any = IJsonApiVerificationAbi.abi[0].inputs[0].components[1];
+
+            try {
+            // Decode the response
+            const decodedResponse = web3.eth.abi.decodeParameter(
+              responseType,
+              proof.response_hex
+            );
+
+            const proofObject = {
+                merkleProof: proof.proof,
+                data: decodedResponse
+              };
+
+            return proofObject;
+            } catch (error: any) {
+                console.log("error", error)
+                return error;
+            }
     } catch (error) {
       console.error("Error in main:", error);
       return error;

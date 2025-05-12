@@ -1,6 +1,6 @@
 # AirClaim: Revolutionizing Flight Delay Insurance with Blockchain Technology
 
-AirClaim represents a paradigm shift in the flight insurance industry, leveraging blockchain technology on the Flare network to create a transparent, efficient, and trustless system for flight delay compensation. This innovative platform addresses the longstanding frustrations of traditional flight insurance: complex claim processes, delayed payouts, and lack of transparency.
+AirClaim represents a paradigm shift in the flight insurance industry, leveraging blockchain technology on the Flare network to create a transparent, efficient, and trustless system for flight delay compensation. This innovative platform addresses the longstanding frustrations of traditional flight insurance: complex claim processes, delayed payouts, and lack of transparency. It also allows paasengers to play a mini game of predicting numbers and winning prizes
 
 ## Core Technology and Infrastructure
 
@@ -23,6 +23,8 @@ The premium calculation follows a straightforward formula: 10% of the flight pri
 
 When a flight is insured, the system creates an `InsuredFlight` struct containing all relevant flight details, including departure and arrival airports, flight date, and initial status. Each insured flight receives a unique ID for tracking purposes.
 
+<img src="/dashboard.png" alt="Airclaim Dashboard">
+
 ## Real-time Flight Monitoring
 
 One of AirClaim's most powerful features is its ability to monitor flight statuses in real-time. The `checkFlightDelay` function allows either the insurer or insured passengers to verify the current status of a flight using data from aviation APIs.
@@ -44,6 +46,10 @@ The claims process includes several validation checks:
 - Confirming the passenger is insured for that flight
 - Ensuring the flight delay exceeds the threshold
 - Checking the passenger hasn't already claimed compensation
+
+Also passenger has an option of winning extra prizes if they can predict a number between 1-20. If the prediction is correct, they win 0.5FLR Token, otherwise, they loose 50% of their insurance claim.
+
+<img src="/prediction_claim.png" alt="Claim Modal">
 
 Upon successful validation, the contract automatically transfers the compensation amount (10% of the flight price) directly to the passenger's wallet. This entire process occurs without human intervention, eliminating the bureaucracy and delays associated with traditional insurance claims.
 
@@ -71,9 +77,9 @@ The smart contracts follow best practices for Solidity development, as evidenced
 
 ## Future Potential
 
-While currently deployed on Flare's testnet, AirClaim has significant potential for mainstream adoption. The platform could expand to cover additional travel disruptions beyond delays, such as cancellations or missed connections, raffle draws for flight passengers when the flight is yet to depart and winnes annouced when flight arrives.
+While currently deployed on Flare's testnet, AirClaim has significant potential for mainstream adoption. The platform could expand to cover additional travel disruptions beyond delays, such as cancellations or missed connections, raffle draws for flight passengers when the flight is yet to depart and winners annouced when flight arrives.
 
-Also features like different data assets that allows passengers have varieties of assets to claim funds either through insurance or raffle draw.
+Also features like different data assets that allows passengers have options of assets to claim funds either through insurance or raffle draw.
 
 Integration with more data sources and airlines could further enhance the platform's capabilities, potentially revolutionizing how travel insurance operates globally. The transparent, automated nature of blockchain-based insurance could significantly reduce operational costs for insurers while providing better service to travelers.
 

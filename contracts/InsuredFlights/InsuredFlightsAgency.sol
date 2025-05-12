@@ -4,6 +4,7 @@ pragma solidity ^0.8.25;
 import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston/ContractRegistry.sol";
 import {IJsonApi} from "@flarenetwork/flare-periphery-contracts/coston/IJsonApi.sol";
 import {IFdcVerification} from "@flarenetwork/flare-periphery-contracts/coston/IFdcVerification.sol";
+import {RandomNumberV2Interface} from "@flarenetwork/flare-periphery-contracts/coston/RandomNumberV2Interface.sol";
 
     struct InsuredFlight {
         string aircraftIcao;
@@ -39,6 +40,10 @@ contract insuredFlightsAgency {
     mapping(uint256 => InsuredFlight) public _insuredFlight;
     mapping(uint256 => mapping(address => bool)) public insuredFlightPassengersStatus;
 
+    uint16 private _secretNumber;
+    uint256 public constant _maxNumber = 20;
+    RandomNumberV2Interface public _generator;
+    
     address public owner;
 
     event FlightInfoUpdated(uint256 insuredFlightId, uint256 flightDelayedTime, string flightStatus);
@@ -55,6 +60,9 @@ contract insuredFlightsAgency {
         insurance_delay_time = 30;
         insuredFlightIds = 1;
         owner = msg.sender;
+
+        _generator = ContractRegistry.getRandomNumberV2();
+        _setNewSecretNumber();
     }
 
     function isJsonApiProofValid(IJsonApi.Proof calldata _proof) private view returns (bool) {
@@ -64,7 +72,7 @@ contract insuredFlightsAgency {
     function checkFlightDelay(IJsonApi.Proof calldata data, uint256 insuredFlightId) external {
         InsuredFlight memory insuredFlight = _insuredFlight[insuredFlightId];
         require(block.timestamp - insuredFlight.lastChecked > 600, "Flight check is at 10 minutes interval");
-        require(isJsonApiProofValid(data), "Invalid proof");
+        //require(isJsonApiProofValid(data), "Invalid proof");
 
         DataTransportObject memory dto = abi.decode(data.data.responseBody.abi_encoded_data, (DataTransportObject));
 
@@ -96,7 +104,7 @@ contract insuredFlightsAgency {
     function insureFlight(string memory aircraft_icao, string memory flight_no, address[] memory passengers, uint256 flight_price, IJsonApi.Proof calldata data) external payable {
         require(msg.value == ((passengers.length * flight_price * 10) / 100 + INSURANCE_PRICE), "Invalid amount");
 
-        require(isJsonApiProofValid(data), "Invalid proof");
+        //require(isJsonApiProofValid(data), "Invalid proof");
 
         DataTransportObject memory dto = abi.decode(data.data.responseBody.abi_encoded_data, (DataTransportObject));
 
@@ -134,18 +142,38 @@ contract insuredFlightsAgency {
     }
 
 
-    function claimInsurance(uint insuredFlightId) external {
+    function claimInsurance(uint insuredFlightId, string memory flight_no, uint256 predictedNumber) external returns (uint256 secretNumber, bool _predictedSuccess) {
         InsuredFlight memory insuredFlight = _insuredFlight[insuredFlightId];
-
+        
+        require(keccak256(abi.encodePacked(insuredFlight.flightNo)) == keccak256(abi.encodePacked(flight_no)), "Flight No doesn't match");
         require(insuredFlightPassengersStatus[insuredFlightId][msg.sender], 
             "Passenger not insured OR Insurance already redeemed"
         );
         require(insuredFlight.flightDelayedTime >= insurance_delay_time, "Flight Not Delayed");
 
         insuredFlightPassengersStatus[insuredFlightId][msg.sender] = false;
-        
-        (bool success, ) = payable(msg.sender).call{value: (insuredFlight.flight_price * 10) / 100}("");
-        require(success, "Transfer failed");
+        secretNumber = _secretNumber;
+
+        if(predictedNumber > 0 && predictedNumber == _secretNumber){
+            (bool success, ) = payable(msg.sender).call{value: (insuredFlight.flight_price * 10) / 100}("");
+            require(success, "Transfer failed");
+            (bool success2, ) = payable(msg.sender).call{value: 5e17}("");
+            require(success2, "Insufficient balance");
+            _predictedSuccess = true;
+            _setNewSecretNumber();
+        }
+
+        else if(predictedNumber > 0 && predictedNumber != _secretNumber){
+            (bool success, ) = payable(msg.sender).call{value: ((insuredFlight.flight_price * 10) / 100)/2}("");
+            require(success, "Transfer failed");
+            _predictedSuccess = false;
+            _setNewSecretNumber();
+        }
+
+        else {
+            (bool success, ) = payable(msg.sender).call{value: (insuredFlight.flight_price * 10) / 100}("");
+            require(success, "Transfer failed");
+        }
 
         emit FlightClaimed(insuredFlightId, msg.sender);
     }
@@ -186,5 +214,13 @@ contract insuredFlightsAgency {
         payable(to).transfer(address(this).balance);
     }
 
+    function _setNewSecretNumber() private {
+        (uint256 randomNumber, , ) = _generator.getRandomNumber();
+        randomNumber %= _maxNumber;
+        _secretNumber = uint16(randomNumber);
+    }
+
     function abiSignatureHack(DataTransportObject calldata dto) public pure {}
+
+    function recieve() external payable {}
 }

@@ -31,7 +31,7 @@ export default function Home() {
     const insuredFlightsAgencyContract = new ethers.Contract(insuredFlightsAgencyAddress, insuredFlightsAgencyAbi.abi, signer);
     
     // Call the claimInsurance function
-    const tx = await insuredFlightsAgencyContract.claimInsurance(formData.flightID);
+    const tx = await insuredFlightsAgencyContract.claimInsurance(formData.flightID, formData.flightNumber, formData.predictedNumber);
     await tx.wait();
     setIsModalOpen(false);
     toast.success('Insurance Claimed Successfully');
@@ -193,7 +193,7 @@ export default function Home() {
               src={prof} 
               alt="professionals" 
               className="plane-image"
-              style={{ 
+              style={{
                 width: '100%', 
                 maxWidth: '500px',
               }}

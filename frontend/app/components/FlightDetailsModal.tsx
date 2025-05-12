@@ -3,11 +3,12 @@ import image1 from '../assets/airplane-sky_1308-31202.png';
 import barcode from '../assets/barcode.png';
 import a_svg from '../assets/148768013_a4a0801a-2ba9-4571-a244-823120e79c2b.svg'
 import airplaneSkySvg from '../assets/airplane-sky_1308-31202.png';
-import { shortenAddress } from '~/utils';
+import { insuredFlightsAgencyAddress, shortenAddress } from '~/utils';
 import { toast } from 'react-toastify';
 import { useAppKitProvider } from '@reown/appkit/react';
 import { checkFlightDetails } from 'scripts/updateFlight';
-import { ethers } from 'ethers';
+import { BrowserProvider, ethers } from 'ethers';
+import insuredFlightsAgencyAbi from 'insuredFlightsAgency.json';
 
 interface FlightDetailsModalProps {
   isOpen: boolean;
@@ -31,14 +32,23 @@ const FlightDetailsModal: React.FC<FlightDetailsModalProps> = ({ isOpen, onClose
   const handleCheckFlightDelay = async () => {
     try {
       setIsLoading(true);
-      const result = await checkFlightDetails(flight.flightNumber, flight.aircraftIcao, flight.flightId, walletProvider);
-      toast.success(result as any);
+      const result = await checkFlightDetails(flight.flightNumber, flight.aircraftIcao, walletProvider);
+
+      const ethersProvider = new BrowserProvider(walletProvider as any);
+      const signer = await ethersProvider.getSigner();
+      // The Contract object
+      const insuredFlightsAgencyContract = new ethers.Contract(insuredFlightsAgencyAddress, insuredFlightsAgencyAbi.abi, signer);
+      const tx = await insuredFlightsAgencyContract.checkFlightDelay(result, Number(flight.insuranceFlightId));
+      await tx.wait();
+      
       fetchMockFlights();
+      toast.success("Flight updated successfully");
       onClose();
       setIsLoading(false);
     } catch (error: any) {
-      toast.error(error);
+      toast.error(error.reason);
       console.log("error",error)
+      onClose();
       setIsLoading(false);
     }
   }
@@ -146,7 +156,7 @@ const FlightDetailsModal: React.FC<FlightDetailsModalProps> = ({ isOpen, onClose
             {/* Todo: Add a button to check flight delay */}
             <div className="w-full flex justify-end gap-2 mt-4">
               <button disabled={isLoading} onClick={onClose} className="bg-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border-2 border-[#6B46C1] text-[#6B46C1] px-4 py-2 rounded-md">Close</button>
-              <button onClick={handleCheckFlightDelay} disabled={flight.status !== "scheduled" || isLoading} className="bg-[#6B46C1] hover:bg-[#4C2AA0] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-md">Check Flight Delay</button>
+              <button onClick={handleCheckFlightDelay} disabled={flight.status !== "scheduled" || isLoading} className="bg-[#6B46C1] hover:bg-[#4C2AA0] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-md">Update Flight Status</button>
             </div>
           </div>
         </div>
