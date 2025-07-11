@@ -14,7 +14,7 @@ const App: React.FC = () => {
   const [openIndex, setOpenIndex] = useState(null);
   const [hoveredCard, setHoveredCard] = useState(null);
 
-  const toggle = (index) => {
+  const toggle = (index: any) => {
     setOpenIndex(openIndex === index ? null : index);
   };
 
@@ -429,7 +429,7 @@ const App: React.FC = () => {
 
         <div className="space-y-4">
           {faqs.map((faq, index) => {
-            const isOpen = openIndex === index;
+            const isOpen: any = openIndex === index;
             return (
               <div
                 key={index}
