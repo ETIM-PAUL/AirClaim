@@ -18,6 +18,8 @@ const App: React.FC = () => {
     setOpenIndex(openIndex === index ? null : index);
   };
 
+  // {This are the frequently launched question}
+
   const faqs = [
     {
       question: "How does the FLR token reward system work?",
