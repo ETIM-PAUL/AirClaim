@@ -1,10 +1,14 @@
 import React from 'react';
+import Swal from 'sweetalert2';
 import { useState } from 'react';
 import { SlArrowDown, SlArrowRight } from "react-icons/sl";
 import { FaPlaneSlash, FaWallet, FaShieldAlt, FaCoins, FaGlobe, FaClock, FaRocket } from "react-icons/fa";
 import { TbCancel, TbPlane } from "react-icons/tb";
 import { BiSolidHourglassTop } from "react-icons/bi";
 import { MdOutlineFlightTakeoff, MdOutlineFlightLand } from "react-icons/md";
+import avatar1 from '../assets/avatar/avatar1.jpg';
+import avatar2 from '../assets/avatar/avatar2.jpg';
+import avatar3 from '../assets/avatar/avatar3.jpg';
 
 const App: React.FC = () => {
   const [openIndex, setOpenIndex] = useState(null);
@@ -79,14 +83,14 @@ const App: React.FC = () => {
       icon: <MdOutlineFlightTakeoff className="text-2xl" />
     },
     {
-      number: "02", 
+      number: "02",
       title: "Monitor Status",
       description: "Our app automatically tracks your flight and alerts you of delays or cancellations.",
       icon: <BiSolidHourglassTop className="text-2xl" />
     },
     {
       number: "03",
-      title: "Predict & Win", 
+      title: "Predict & Win",
       description: "If your flight is delayed, predict lucky numbers during the claim process for a chance to win FLR tokens.",
       icon: <FaCoins className="text-2xl" />
     },
@@ -311,7 +315,7 @@ const App: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Testimonial 1 */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 text-left">
-            <div className="text-green-400 mb-2"><BiSolidHourglassTop /></div>
+            <div className="text-green-400 mb-2"><BiSolidHourglassTop className='text-3xl' /></div>
             <h1>Flight Delays</h1>
             <p className="text-gray-300 mb-10">
               Get compensation for delays starting from 1 hour. The longer the delay, the higher the payout
@@ -322,9 +326,9 @@ const App: React.FC = () => {
 
           {/* Testimonial 2 */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 text-left">
-            <div className="text-green-400 mb-2 w-16 h-16"><TbCancel /></div>
+            <div className="text-green-400 mb-2 w-16 h-16"><TbCancel className='text-3xl' /></div>
             <h1>Cancellations</h1>
-            <p className="text-gray-300 mb-4">
+            <p className="text-gray-300 mb-4 ">
               Full coverage for unexpected flight cancellations, including reimbursement for alternative arrangements.
             </p>
             <div className="font-semibold text-white border-t border-gray-400  md:mx-8 lg:mx-1"></div>
@@ -333,7 +337,7 @@ const App: React.FC = () => {
 
           {/* Testimonial 3 */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 text-left">
-            <div className="text-green-400 mb-2"><TbPlane /></div>
+            <div className="text-green-400 mb-2"><TbPlane className='text-3xl' /></div>
             <h1>Missed Connections</h1>
             <p className="text-gray-300 mb-4">
               Protection for missed connecting flights due to delays in your initial flight, including accommodation if needed.
@@ -358,8 +362,18 @@ const App: React.FC = () => {
             <p className="text-gray-300 mb-4">
               "My flight was delayed by 3 hours, but I won 75 FLR tokens while waiting! The claim process was completely automated and the compensation arrived before I even landed."
             </p>
-            <div className="font-semibold text-white">James Wilson</div>
-            <div className="text-sm text-gray-500">Business Traveler</div>
+            <div className="avatar_container flex justify-start justify-center align-center">
+              <img
+                src={avatar1}
+                alt={avatar1}
+                className="w-15 h-15 rounded-full p-3  object-cover"
+              />
+              <div className='p-2'>
+
+                <div className="font-semibold text-white">James Wilson</div>
+                <div className="text-sm text-gray-500">Business Traveler</div>
+              </div>
+            </div>
           </div>
 
           {/* Testimonial 2 */}
@@ -368,8 +382,19 @@ const App: React.FC = () => {
             <p className="text-gray-300 mb-4">
               "The prediction game made my 2-hour delay actually fun! I won some FLR tokens and the insurance payout covered my dinner at the airport. Brilliant concept!"
             </p>
-            <div className="font-semibold text-white">Emily Chen</div>
-            <div className="text-sm text-gray-500">Frequent Flyer</div>
+            <div className="avatar_container flex justify-start justify-center align-center">
+              <img
+                src={avatar2}
+                alt={avatar2}
+                className="w-15 h-15 rounded-full p-3  object-cover"
+              />
+              <div className='p-2'>
+
+                <div className="font-semibold text-white">Emily Chen</div>
+                <div className="text-sm text-gray-500">Frequent Flyer</div>
+              </div>
+            </div>
+
           </div>
 
           {/* Testimonial 3 */}
@@ -378,8 +403,17 @@ const App: React.FC = () => {
             <p className="text-gray-300 mb-4">
               "I've tried other flight insurance apps, but Airclaim is by far the best. The token rewards are a unique touch, and their claim process is completely hassle-free."
             </p>
-            <div className="font-semibold text-white">Michael Rodriguez</div>
-            <div className="text-sm text-gray-500">Vacation Traveler</div>
+            <div className='justify-start justify-center align-center'>
+            <img
+                src={avatar3}
+                alt={avatar3}
+                className="w-15 h-15 rounded-full p-3  object-cover"
+              />
+              <div>
+                <div className="font-semibold text-white">Michael Rodriguez</div>
+                <div className="text-sm text-gray-500">Vacation Traveler</div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
