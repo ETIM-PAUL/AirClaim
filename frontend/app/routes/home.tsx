@@ -11,8 +11,8 @@ import avatar2 from '../assets/avatar/avatar2.jpg';
 import avatar3 from '../assets/avatar/avatar3.jpg';
 
 const App: React.FC = () => {
-  const [openIndex, setOpenIndex] = useState(null);
-  const [hoveredCard, setHoveredCard] = useState(null);
+  const [openIndex, setOpenIndex] = useState<any>(null);
+  const [hoveredCard, setHoveredCard] = useState<any>(null);
 
   const toggle = (index: any) => {
     setOpenIndex(openIndex === index ? null : index);
@@ -123,8 +123,8 @@ const App: React.FC = () => {
             <a href="#rewards" className="hover:text-green-400 transition-colors duration-300 font-medium">Rewards</a>
             <a href="#faq" className="hover:text-green-400 transition-colors duration-300 font-medium">FAQ</a>
           </nav>
-          <button className="bg-gradient-to-r from-green-400 to-emerald-500 text-black px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-green-500/25 transition-all duration-300 transform hover:scale-105">
-            Launch App
+          <button className="cursor-pointer bg-gradient-to-r from-green-400 to-emerald-500 text-black px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-green-500/25 transition-all duration-300 transform hover:scale-105">
+            <a href="/dashboard">Launch App</a>
           </button>
         </div>
       </header>
@@ -243,7 +243,7 @@ const App: React.FC = () => {
       </section>
 
       {/* FLR Token Rewards Section */}
-      <section className="max-w-7xl mx-auto px-6 py-20 bg-gradient-to-br from-purple-500/10 to-pink-500/10">
+      <section id="rewards" className="max-w-7xl mx-auto px-6 py-20 bg-gradient-to-br from-purple-500/10 to-pink-500/10">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-8">
             <h2 className="text-4xl font-bold leading-tight">Win FLR Tokens While You Wait</h2>
@@ -418,7 +418,7 @@ const App: React.FC = () => {
       </section>
 
       {/* FAQ Section */}
-      <section className="max-w-7xl mx-auto px-6 py-20 bg-gradient-to-r from-green-500/10 to-emerald-500/10">
+      <section id="faq" className="max-w-7xl mx-auto px-6 py-20 bg-gradient-to-r from-green-500/10 to-emerald-500/10">
         <h2 className="text-4xl font-bold text-center mb-6">Frequently Asked Questions</h2>
         <p className="text-center text-gray-400 mb-12">
           Answers to common questions about Airclaim's insurance and rewards.
@@ -454,10 +454,12 @@ const App: React.FC = () => {
       {/* Footer */}
       <footer className="px-12 py-10 border-t border-gray-800 mx-4 md:mx-8 lg:mx-16">
 
-        <p className="text-center text-gray-400 mt-8">© 2023 Airclaim. All rights reserved.</p>
+        <p className="text-center text-gray-400 mt-8">© {new Date().getFullYear()} Airclaim. All rights reserved.</p>
         <div className="flex justify-center space-x-4 mt-2">
           <a href="#privacy" className="text-gray-400 hover:text-green-400">Privacy</a>
+          <span className="text-gray-400">|</span>
           <a href="#terms" className="text-gray-400 hover:text-green-400">Terms</a>
+          <span className="text-gray-400">|</span>
           <a href="#cookies" className="text-gray-400 hover:text-green-400">Cookies</a>
         </div>
       </footer>

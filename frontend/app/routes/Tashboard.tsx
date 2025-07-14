@@ -2,47 +2,8 @@ import React from "react";
 import StatCard from "../components/statCard";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 import { FaPlane, FaDollarSign, FaUserFriends, FaMoneyCheckAlt, FaChartBar, FaChartPie, FaChartLine, FaSuitcase, FaHeartbeat, FaExclamationCircle, FaTachometerAlt, FaPlaneDeparture, FaFileAlt, FaChartArea, FaUserCircle, FaCog, FaFileExport, FaClipboardList } from "react-icons/fa";
+import Sidebar from "~/components/Sidebar";
 
-const Sidebar = () => (
-  <aside className="fixed top-0 left-0 h-full w-64 bg-[#101112] border-r border-gray-900 flex flex-col justify-between z-40">
-    <div>
-      {/* Logo */}
-      <div className="flex items-center gap-3 px-6 py-6 border-b border-gray-900">
-        <div className="bg-green-500 w-8 h-8 rounded-lg flex items-center justify-center">
-          <span className="text-black text-xl font-bold">💬</span>
-        </div>
-        <span className="text-2xl font-bold text-white tracking-tight">WhisperPay</span>
-      </div>
-      {/* Main Navigation */}
-      <nav className="mt-6 px-2 flex-1">
-        <div className="mb-4">
-          <span className="text-xs text-gray-500 px-4">MAIN</span>
-          <ul className="mt-2 space-y-1">
-            <li><a href="#" className="flex items-center gap-3 px-4 py-2 rounded-lg bg-[#18191b] text-green-400 font-semibold"><FaTachometerAlt /> Dashboard</a></li>
-            <li><a href="#" className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-300 hover:bg-[#18191b] transition"><FaPlaneDeparture /> Flights</a></li>
-            <li><a href="#" className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-300 hover:bg-[#18191b] transition"><FaClipboardList /> Insurance</a></li>
-            <li><a href="#" className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-300 hover:bg-[#18191b] transition"><FaFileAlt /> Claims</a></li>
-          </ul>
-        </div>
-        <div className="mb-4">
-          <span className="text-xs text-gray-500 px-4">REPORTS</span>
-          <ul className="mt-2 space-y-1">
-            <li><a href="#" className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-300 hover:bg-[#18191b] transition"><FaChartArea /> Analytics</a></li>
-            <li><a href="#" className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-300 hover:bg-[#18191b] transition"><FaFileExport /> Export</a></li>
-          </ul>
-        </div>
-        <div>
-          <span className="text-xs text-gray-500 px-4">SETTINGS</span>
-          <ul className="mt-2 space-y-1">
-            <li><a href="#" className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-300 hover:bg-[#18191b] transition"><FaUserCircle /> Profile</a></li>
-            <li><a href="#" className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-300 hover:bg-[#18191b] transition"><FaCog /> Preferences</a></li>
-          </ul>
-        </div>
-      </nav>
-    </div>
-    <div className="px-6 py-4 border-t border-gray-900 text-xs text-gray-600">© 2024 WhisperPay</div>
-  </aside>
-);
 
 const Dashboard = () => {
   const barData = [

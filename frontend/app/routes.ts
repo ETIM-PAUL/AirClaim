@@ -4,5 +4,5 @@
         index("routes/home.tsx"),
         route('dashboard', 'routes/dashboard.tsx'),
         route('main', 'routes/main.tsx'),
-        route('Tashboard', 'routes/Tashboard.tsx'),
+        route('flight_details/:id', 'routes/flight_details.tsx'),
     ] satisfies RouteConfig;
