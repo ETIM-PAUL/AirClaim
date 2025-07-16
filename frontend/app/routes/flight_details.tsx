@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FaPlane, FaUserFriends, FaDollarSign, FaChartLine, FaExclamationCircle, FaCheckCircle, FaCalendarAlt, FaMapMarkerAlt, FaTicketAlt, FaInfoCircle } from "react-icons/fa";
+import { FaPlane, FaUserFriends, FaDollarSign, FaChartLine, FaExclamationCircle, FaCheckCircle, FaCalendarAlt, FaMapMarkerAlt, FaTicketAlt, FaInfoCircle, FaGamepad } from "react-icons/fa";
 import Sidebar from "~/components/Sidebar";
 
 const FlightDetailsPage = () => {
@@ -15,8 +15,6 @@ const FlightDetailsPage = () => {
     arrivalAirport: "LAX",
     flightStatus: "Delayed",
     insurer: "AirClaim Insurance",
-    ticketPrice: "1200 FLR",
-    passengerTicketPrice: "600 FLR",
     passengers: 2,
     passengersList: [
       {
@@ -40,9 +38,9 @@ const FlightDetailsPage = () => {
         won: "n/a",
       },
     ],
-    insuredAmount: "560 FLR",
-    claimedAmount: "280 FLR",
-    claimedFLR: "280 FLR",
+    insuredAmount: "560",
+    claimedFLR: "280",
+    predictionFLRWon: "100",
     status: "Claimed",
   });
 
@@ -105,13 +103,7 @@ const FlightDetailsPage = () => {
                   <p className={`font-semibold ${flight.flightStatus === "Delayed" ? "text-yellow-400" : flight.flightStatus === "Cancelled" ? "text-red-400" : "text-green-400"}`}>{flight.flightStatus}</p>
                 </div>
               </div>
-              {/* <div className="flex items-center gap-3">
-                <FaTicketAlt className="text-green-400 text-xl" />
-                <div>
-                  <p className="text-gray-400">Ticket Price</p>
-                  <p className="font-semibold">{flight.ticketPrice}</p>
-                </div>
-              </div> */}
+
               <div className="flex items-center gap-3">
                 <FaUserFriends className="text-green-400 text-xl" />
                 <div>
@@ -119,12 +111,15 @@ const FlightDetailsPage = () => {
                   <p className="font-semibold">{flight.passengers ?? 0}</p>
                 </div>
               </div>
+              
+              {flight.flightStatus === "Delayed" && (
               <button
                 onClick={handleCheckFlightStatus}
-                className="mt-4 w-full bg-gradient-to-r from-cyan-500 to-blue-600 py-2 rounded-lg text-white text-sm font-semibold shadow hover:from-cyan-600 hover:to-blue-700 transition"
+                className="mt-4 w-full bg-gradient-to-r from-green-400 to-emerald-500 py-2 rounded-lg text-white text-sm font-semibold shadow hover:from-emerald-600 hover:to-emerald-700 transition cursor-pointer"
               >
-                Check Flight Status
+                Claim Insurance
               </button>
+              )}
             </div>
           </div>
 
@@ -154,10 +149,10 @@ const FlightDetailsPage = () => {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <FaChartLine className="text-green-400 text-xl" />
+                <FaGamepad className="text-green-400 text-xl" />
                 <div>
-                  <p className="text-gray-400">Claimed Amount</p>
-                  <p className="font-semibold">{flight.claimedAmount} FLR</p>
+                  <p className="text-gray-400">Prediction FLR Won</p>
+                  <p className="font-semibold">{flight.predictionFLRWon} FLR</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">

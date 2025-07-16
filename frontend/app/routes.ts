@@ -4,5 +4,8 @@
         index("routes/home.tsx"),
         route('dashboard', 'routes/dashboard.tsx'),
         route('main', 'routes/main.tsx'),
-        route('flight_details/:id', 'routes/flight_details.tsx'),
+        route('flight-details/:id', 'routes/flight_details.tsx'),
+        route('insured-flights', 'routes/insured_flights.tsx'),
+        route('insure-flight', 'routes/insure_flight.tsx'),
+        route('wallet', 'routes/wallet.tsx'),
     ] satisfies RouteConfig;

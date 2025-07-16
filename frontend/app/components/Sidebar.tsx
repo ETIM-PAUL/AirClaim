@@ -1,8 +1,9 @@
 import React from 'react'
-import { FaPlane, FaDollarSign, FaUserFriends, FaMoneyCheckAlt, FaChartBar, FaChartPie, FaChartLine, FaSuitcase, FaHeartbeat, FaExclamationCircle, FaTachometerAlt, FaPlaneDeparture, FaFileAlt, FaChartArea, FaUserCircle, FaCog, FaFileExport, FaClipboardList } from "react-icons/fa";
-
+import { FaPlane, FaDollarSign, FaUserFriends, FaMoneyCheckAlt, FaChartBar, FaChartPie, FaChartLine, FaSuitcase, FaHeartbeat, FaExclamationCircle, FaTachometerAlt, FaPlaneDeparture, FaFileAlt, FaChartArea, FaUserCircle, FaCog, FaFileExport, FaClipboardList, FaWallet } from "react-icons/fa";
+import { useNavigate } from 'react-router-dom';
 
 const Sidebar = () => {
+  const navigate = useNavigate();
   return (
         <aside className="fixed top-0 left-0 h-full w-64 bg-[#101112] border-r border-gray-900 flex flex-col justify-between z-40">
           <div>
@@ -20,10 +21,23 @@ const Sidebar = () => {
               <div className="mb-4">
                 <span className="text-xs text-gray-500 px-4">MAIN</span>
                 <ul className="mt-2 space-y-1">
-                  <li><a href="#" className="flex items-center gap-3 px-4 py-2 rounded-lg bg-[#18191b] text-green-400 font-semibold"><FaTachometerAlt /> Dashboard</a></li>
-                  <li><a href="#" className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-300 hover:bg-[#18191b] transition"><FaPlaneDeparture /> Flights</a></li>
-                  <li><a href="#" className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-300 hover:bg-[#18191b] transition"><FaClipboardList /> Insurance</a></li>
-                  <li><a href="#" className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-300 hover:bg-[#18191b] transition"><FaFileAlt /> Claims</a></li>
+                  <li className='cursor-pointer'><span onClick={() => navigate('/dashboard')} className={`flex items-center gap-3 px-4 py-2 rounded-lg text-gray-300 hover:bg-[#18191b] transition ${window.location.pathname === '/dashboard' ? 'bg-[#18191b] text-green-400' : ''}`}><FaTachometerAlt /> Dashboard</span></li>
+                  <li className='cursor-pointer'><span onClick={() => navigate('/insured-flights')} className={`flex items-center gap-3 px-4 py-2 rounded-lg text-gray-300 hover:bg-[#18191b] transition ${window.location.pathname === '/insured-flights' ? 'bg-[#18191b] text-green-400' : ''}`}><FaPlaneDeparture />Insured Flights</span></li>
+                  <li className='cursor-pointer'><span onClick={() => navigate('/claims')} className={`flex items-center gap-3 px-4 py-2 rounded-lg text-gray-300 hover:bg-[#18191b] transition ${window.location.pathname === '/claims' ? 'bg-[#18191b] text-green-400' : ''}`}><FaFileAlt /> Claims</span></li>
+                </ul>
+              </div>
+
+              <div className='mb-4'>
+                <span className="text-xs text-gray-500 px-4">Games</span>
+                <ul className="mt-2 space-y-1">
+                  <li className='cursor-pointer'><span onClick={() => navigate('/wallet')} className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-300 hover:bg-[#18191b] transition"><FaWallet /> Prediction Game</span></li>
+                </ul>
+              </div>
+
+              <div>
+                <span className="text-xs text-gray-500 px-4">SETTINGS</span>
+                <ul className="mt-2 space-y-1">
+                  <li className='cursor-pointer'><span onClick={() => navigate('/wallet')} className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-300 hover:bg-[#18191b] transition"><FaWallet /> Wallet</span></li>
                 </ul>
               </div>
 
