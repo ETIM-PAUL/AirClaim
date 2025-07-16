@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { Copy, Wallet, Network, Coins } from "lucide-react";
 import { useAppKit, useAppKitAccount, useAppKitBalance, useDisconnect } from '@reown/appkit/react'; // Replace wagmi with reown
-import { ethers, formatEther } from 'ethers';
 import Sidebar from '~/components/Sidebar';
 
 const MyWallet = () => {
@@ -46,9 +45,9 @@ const MyWallet = () => {
   return (
     <div>
       <div className="w-full bg-gradient-to-br from-gray-900 via-black to-gray-950">
-        <div className="flex p-4">
+        <div className="flex">
           <Sidebar />
-          <div className="block w-full">
+          <div className="block w-full ml-64 p-6">
             <div className="p-4">
               <div className="bg-gradient-to-br from-gray-900 via-black to-gray-950 rounded-xl p-4">
                 <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-950 p-8">
