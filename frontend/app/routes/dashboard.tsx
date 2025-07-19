@@ -16,6 +16,7 @@ import { FaPlane, FaDollarSign, FaUserFriends, FaMoneyCheckAlt, FaChartBar, FaCh
 import StatCard from "../components/statCard";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 import Sidebar from '~/components/Sidebar';
+import { useGeneral } from '../context/GeneralContext';
 
 interface FlightFormData {
   aircraftCode: string;
@@ -44,6 +45,7 @@ const Dashboard = () => {
   const { address, isConnected } = useAppKitAccount();
   const { walletProvider } = useAppKitProvider("eip155");
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const { isSidebarCollapsed } = useGeneral();
   
   const handleDisconnect = () => {
     disconnect();
@@ -136,11 +138,11 @@ const Dashboard = () => {
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-950">
       <Sidebar />
-      <main className="flex-1 ml-64 p-6 text-white">
+      <main className={`flex-1 ${isSidebarCollapsed ? 'pl-20' : 'pl-64'} p-6 text-white`}>
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight">Welcome back to, <span className="text-green-400"> Airclaim</span></h1>
+            <h1 className="text-3xl font-extrabold tracking-tight">Welcome back to <span className="text-green-400"> Airclaim</span></h1>
             <p className="text-gray-400 mt-1">Here’s a summary of all insured flights and claims</p>
           </div>
 
@@ -249,7 +251,7 @@ const Dashboard = () => {
                   <span className="font-bold text-lg text-red-400">{claim.amount}</span>
                 </div>
               ))}
-              <button className="mt-4 w-full bg-gradient-to-r from-green-500 to-green-700 py-2 rounded-lg text-white text-sm font-semibold shadow hover:from-green-600 hover:to-green-800 transition">View All Claims</button>
+              <button onClick={() => navigate('/claims')} className="mt-4 cursor-pointer w-full bg-gradient-to-r from-green-500 to-green-700 py-2 rounded-lg text-white text-sm font-semibold shadow hover:from-green-600 hover:to-green-800 transition">View My Claims</button>
             </div>
           </div>
         </div>

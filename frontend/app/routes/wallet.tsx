@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useState } from 'react'
 import { Copy, Wallet, Network, Coins } from "lucide-react";
 import { useAppKit, useAppKitAccount, useAppKitBalance, useDisconnect } from '@reown/appkit/react'; // Replace wagmi with reown
 import Sidebar from '~/components/Sidebar';
+import { useGeneral } from "../context/GeneralContext";
 
 const MyWallet = () => {
   const { address, isConnected } = useAppKitAccount(); // Use reown's wallet hooks
@@ -9,6 +10,8 @@ const MyWallet = () => {
   const { disconnect } = useDisconnect();
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [balance, setBalance] = useState<any>(0);
+  const { isSidebarCollapsed } = useGeneral();
+ 
 
   const { open} = useAppKit();
 
@@ -47,7 +50,7 @@ const MyWallet = () => {
       <div className="w-full bg-gradient-to-br from-gray-900 via-black to-gray-950">
         <div className="flex">
           <Sidebar />
-          <div className="block w-full ml-64 p-6">
+          <div className={`block ${isSidebarCollapsed ? 'ml-20' : 'ml-64'} p-6 text-white w-full`}>
             <div className="p-4">
               <div className="bg-gradient-to-br from-gray-900 via-black to-gray-950 rounded-xl p-4">
                 <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-950 p-8">

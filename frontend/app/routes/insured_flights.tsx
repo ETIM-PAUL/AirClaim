@@ -2,11 +2,12 @@ import { useState } from "react";
 import { FaCalendarAlt, FaMoneyBill, FaPlane, FaPlus, FaSatellite } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "~/components/Sidebar";
+import { useGeneral } from "../context/GeneralContext";
 
 const FlightsOverviewPage = () => {
   const [flights, setFlights] = useState<any[]>([
     {
-      id: "UA-482",
+      id: "1",
       flightNumber: "UA-482",
       airline: "United Airlines",
       airlineImage: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/United_Airlines_logo_2010.svg/1200px-United_Airlines_logo_2010.svg.png",
@@ -17,7 +18,7 @@ const FlightsOverviewPage = () => {
       insuredAmount: "560 FLR",
     },
     {
-      id: "DL-123",
+      id: "2",
       flightNumber: "DL-123",
       airline: "Delta Airlines",
       airlineImage: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Delta_Airlines_logo_2014.svg/1200px-Delta_Airlines_logo_2014.svg.png",
@@ -28,7 +29,7 @@ const FlightsOverviewPage = () => {
       insuredAmount: "720 FLR",
     },
     {
-      id: "AA-456",
+      id: "3",
       flightNumber: "AA-456",
       airline: "American Airlines",
       airlineImage: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/American_Airlines_logo_2013.svg/1200px-American_Airlines_logo_2013.svg.png",
@@ -41,6 +42,7 @@ const FlightsOverviewPage = () => {
   ]);
 
   const navigate = useNavigate();
+  const { isSidebarCollapsed } = useGeneral();
 
   const handleInsureNewFlight = () => {
     // Navigate to the page for insuring a new flight
@@ -55,7 +57,7 @@ const FlightsOverviewPage = () => {
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-950">
         <Sidebar />
-      <main className="flex-1 ml-64 p-6 text-white">
+      <main className={`flex-1 ${isSidebarCollapsed ? 'ml-20' : 'ml-64'} p-6 text-white`}>
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>

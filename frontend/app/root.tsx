@@ -15,6 +15,7 @@ import { EthersAdapter } from "@reown/appkit-adapter-ethers";
 import { AppKitNetwork, mainnet } from "@reown/appkit/networks";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { GeneralProvider } from "./context/GeneralContext";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -95,9 +96,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        <WalletProvider>
-          {children}
-          <ToastContainer
+        <GeneralProvider>
+          <WalletProvider>
+            {children}
+            <ToastContainer
             position="top-right"
             autoClose={5000}
             hideProgressBar={false}
@@ -107,8 +109,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
             pauseOnFocusLoss
             draggable
             pauseOnHover
-          />
-        </WalletProvider>
+            />
+          </WalletProvider>
+        </GeneralProvider>
         <ScrollRestoration />
         <Scripts />
       </body>

@@ -3,7 +3,7 @@ import React, { useContext, useEffect, useState } from 'react'
 import { Copy, Wallet, Network, Coins } from "lucide-react";
 import { useAppKit, useAppKitAccount, useAppKitBalance, useDisconnect } from '@reown/appkit/react'; 
 import Sidebar from '~/components/Sidebar';
-
+import { useGeneral } from '~/context/GeneralContext';
 
 const MyClaims = () => {
   const { address, isConnected } = useAppKitAccount(); // Use reown's wallet hooks
@@ -11,7 +11,7 @@ const MyClaims = () => {
   const { disconnect } = useDisconnect();
   const [claims, setClaims] = useState<any>([]); // State to store claims data
   const { open} = useAppKit();
-
+  const { isSidebarCollapsed } = useGeneral();
   // Fetch claims data for the connected wallet
   const fetchClaims = async () => {
     // Replace with actual API call or contract interaction to fetch claims
@@ -62,7 +62,7 @@ const MyClaims = () => {
       <div className="w-full bg-gradient-to-br from-gray-900 via-black to-gray-950">
         <div className="flex">
           <Sidebar />
-          <div className="block w-full ml-64 p-6">
+          <div className={`block w-full ${isSidebarCollapsed ? 'ml-20' : 'ml-64'} p-6`}>
             <div>
              <h1 className="text-3xl font-extrabold tracking-tight">Claimed Insurances</h1>
              <p className="text-gray-400 mt-1">Overview of all your claimed insurances</p>
@@ -83,7 +83,8 @@ const MyClaims = () => {
                       </button>
                     </div>
                   ) : (
-                    <div className="">
+                 <div className="">
+                    {claims.length > 0 ? (
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
                         <thead className="text-gray-400 border-b border-gray-700">
@@ -116,13 +117,19 @@ const MyClaims = () => {
                         </tbody>
                         </table>
                     </div>
+                    ) : (
+                    <div className="flex flex-col items-center justify-center min-h-[400px]">
+                      <h2 className="text-2xl font-bold text-white mb-6">No claims found</h2>
                     </div>
-                  )}
-                </div>
+                    )}
+                 </div>
+                  )
+                }
               </div>
             </div>
           </div>
         </div>
+      </div>
       </div>
   )
 }

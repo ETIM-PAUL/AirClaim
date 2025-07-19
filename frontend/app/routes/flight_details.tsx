@@ -1,10 +1,18 @@
-import { useState } from "react";
-import { FaPlane, FaUserFriends, FaDollarSign, FaChartLine, FaExclamationCircle, FaCheckCircle, FaCalendarAlt, FaMapMarkerAlt, FaTicketAlt, FaInfoCircle, FaGamepad } from "react-icons/fa";
+import React, { useState } from 'react';
+import { FaPlane, FaUserFriends, FaDollarSign, FaChartLine, FaExclamationCircle, FaCheckCircle, FaCalendarAlt, FaMapMarkerAlt, FaTicketAlt, FaInfoCircle, FaGamepad, FaClock, FaFantasyFlightGames, FaHandSparkles } from "react-icons/fa";
+import {Check, X, Clock, ArrowRight } from "lucide-react";
 import Sidebar from "~/components/Sidebar";
+import { TbNumber10, TbNumbers } from 'react-icons/tb';
+import { GiPodiumWinner } from "react-icons/gi";
+import { RiCreativeCommonsZeroFill } from "react-icons/ri";
 
 const FlightDetailsPage = () => {
+  const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
+  const [participateInPrediction, setParticipateInPrediction] = useState(false);
+  const [prediction, setPrediction] = useState("");
+
   const [flight, setFlight] = useState<any>({
-    id: "UA-482",
+    id: "1",
     flightNumber: "UA-482",
     airline: "United Airlines",
     airlineICAO: "UAL",
@@ -40,13 +48,21 @@ const FlightDetailsPage = () => {
     ],
     insuredAmount: "560",
     claimedFLR: "280",
-    predictionFLRWon: "100",
-    status: "Claimed",
+    predictionFLRWon: "100"
   });
 
   const handleCheckFlightStatus = () => {
-    // Implement flight status check logic here
-    alert("Checking flight status...");
+    setIsClaimModalOpen(true);
+  };
+
+  const handleProceed = () => {
+    // Logic to proceed with the claim
+    console.log("Proceeding with claim...");
+    setIsClaimModalOpen(false);
+  };
+
+  const handleCancel = () => {
+    setIsClaimModalOpen(false);
   };
 
   return (
@@ -115,7 +131,7 @@ const FlightDetailsPage = () => {
               {flight.flightStatus === "Delayed" && (
               <button
                 onClick={handleCheckFlightStatus}
-                className="mt-4 w-full bg-gradient-to-r from-green-400 to-emerald-500 py-2 rounded-lg text-white text-sm font-semibold shadow hover:from-emerald-600 hover:to-emerald-700 transition cursor-pointer"
+                className="mt-4 w-full bg-gradient-to-r from-green-400 to-emerald-500 py-2 rounded-lg text-white text-sm font-semibold shadow hover:from-emerald-600 hover:to-emerald-700 transition-all transform hover:scale-105 cursor-pointer"
               >
                 Claim Insurance
               </button>
@@ -131,7 +147,7 @@ const FlightDetailsPage = () => {
                 <FaExclamationCircle className="text-red-400 text-xl" />
                 <div>
                   <p className="text-gray-400">Claim Status</p>
-                  <p className={`font-semibold ${flight.status === "Claimed" ? "text-red-400" : "text-green-400"}`}>{flight.status}</p>
+                  <p className={`font-semibold ${flight.flightStatus === "Delayed" ? "text-red-400" : "text-green-400"}`}>{flight.flightStatus === "Delayed" ? "Activated" : "Not Claimed"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -201,6 +217,119 @@ const FlightDetailsPage = () => {
           </div>
         </div>
       </main>
+
+      {/* Claim Insurance Modal */}
+      {isClaimModalOpen && (
+        <div className="fixed inset-0 flex mx-auto items-center justify-center bg-blac bg-opacity-50 backdrop-blur-sm">
+          <div className="flex w-full justify-center">
+            <div className="flex gap-6 bg-white rounded-2xl p-3">
+              <div className="w-1/2 flex flex-col justify-center items-center">
+                <h2 className="text-2xl font-bold mb-6 text-gray-800">Claim Insurance</h2>
+
+                {/* Prediction Game Selector */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-600 mb-4">
+                    Do you want to participate in the prediction game?
+                  </label>
+                  <div className="flex items-center justify-center gap-4">
+                    <button
+                      onClick={() => setParticipateInPrediction(true)}
+                      className={`flex items-center justify-center gap-2 px-2 cursor-pointer py-2 rounded-xl transition-all transform hover:scale-105 ${
+                        participateInPrediction
+                          ? "bg-green-500 text-white shadow-lg"
+                          : "bg-white text-gray-700 shadow-sm hover:shadow-md"
+                      }`}
+                    >
+                      <Check className="w-5 h-5" />
+                      Yes
+                    </button>
+                    <button
+                      onClick={() => setParticipateInPrediction(false)}
+                      className={`flex items-center justify-center gap-2 px-2 cursor-pointer py-2 rounded-xl transition-all transform hover:scale-105 ${
+                        !participateInPrediction
+                          ? "bg-red-500 text-white shadow-lg"
+                          : "bg-white text-gray-700 shadow-sm hover:shadow-md"
+                      }`}
+                    >
+                      <X className="w-5 h-5" />
+                      No
+                    </button>
+                  </div>
+                </div>
+
+                {/* Prediction Game UI */}
+                {participateInPrediction && (
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-600 mb-2">
+                      Predict the current secret number:
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={prediction}
+                        onChange={(e) => setPrediction(e.target.value)}
+                        className="w-full text-black p-3 pl-10 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 bg-white shadow-sm"
+                        placeholder="Enter your prediction"
+                      />
+                      <TbNumbers className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                    </div>
+                  </div>
+                )}
+
+                {/* Cancel and Proceed Buttons */}
+                <div className="flex justify-start gap-4">
+                  <button
+                    onClick={handleCancel}
+                    className="flex items-center justify-center gap-2 px-2 cursor-pointer py-2 bg-white text-gray-700 rounded-xl shadow-sm hover:shadow-md transition-all transform hover:scale-105"
+                  >
+                    <X className="w-5 h-5" />
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleProceed}
+                    className="flex items-center justify-center gap-2 px-2 cursor-pointer py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+                  >
+                    Proceed
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="w-1/2 flex justify-center">
+                <div className="md:w-lg px-8 py-6 bg-gradient-to-br from-gray-900 via-black to-gray-950 shadow-xl text-center rounded-2xl">
+                    <h2 className="text-xl font-bold mb-4">Claiming Of Insurance</h2>
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-gradient-to-r from-green-500 to-cyan-600 rounded-lg">
+                                <FaMapMarkerAlt className="text-white text-xl" />
+                            </div>
+                            <p className="text-gray-400 text-left">Insurance claims is active for delayed or cancelled flights.</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-gradient-to-r from-green-500 to-cyan-600 rounded-lg">
+                                <FaFantasyFlightGames className="text-white text-xl" />
+                            </div>
+                            <p className="text-gray-400 text-left">You have an option of playing a prediction game.</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-gradient-to-r from-green-500 to-cyan-600 rounded-lg">
+                                <GiPodiumWinner className="text-white text-xl" />
+                            </div>
+                            <p className="text-gray-400 text-left">If your prediction is correct, you claim your full insurance and win 5FLR.</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-gradient-to-r from-green-500 to-cyan-600 rounded-lg">
+                                <RiCreativeCommonsZeroFill className="text-white text-xl" />
+                            </div>
+                            <p className="text-gray-400 text-left">If your prediction is wrong, you lose 50% of your insurance.</p>
+                        </div>
+                    </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

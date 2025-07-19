@@ -9,7 +9,7 @@ import { MdOutlineFlightTakeoff, MdOutlineFlightLand } from "react-icons/md";
 import avatar1 from '../assets/avatar/avatar1.jpg';
 import avatar2 from '../assets/avatar/avatar2.jpg';
 import avatar3 from '../assets/avatar/avatar3.jpg';
-
+import { useNavigate } from 'react-router-dom';
 const App: React.FC = () => {
   const [openIndex, setOpenIndex] = useState<any>(null);
   const [hoveredCard, setHoveredCard] = useState<any>(null);
@@ -17,6 +17,8 @@ const App: React.FC = () => {
   const toggle = (index: any) => {
     setOpenIndex(openIndex === index ? null : index);
   };
+
+  const navigate = useNavigate();
 
   // {This are the frequently launched question}
 
@@ -124,7 +126,7 @@ const App: React.FC = () => {
             <a href="#faq" className="hover:text-green-400 transition-colors duration-300 font-medium">FAQ</a>
           </nav>
           <button className="cursor-pointer bg-gradient-to-r from-green-400 to-emerald-500 text-black px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-green-500/25 transition-all duration-300 transform hover:scale-105">
-            <a href="/dashboard">Launch App</a>
+            <span onClick={() => navigate('/dashboard')}>Launch App</span>
           </button>
         </div>
       </header>
