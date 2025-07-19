@@ -9,5 +9,6 @@
         route('insure-flight', 'routes/insure_flight.tsx'),
         route('wallet', 'routes/wallet.tsx'),
         route('claims', 'routes/claims.tsx'),
-        route('lucky-spin', 'routes/lucky_spin.tsx')
+        route('lucky-spin', 'routes/lucky_spin.tsx'),
+        route('battle-ship', 'routes/battle_ship.tsx')
     ] satisfies RouteConfig;

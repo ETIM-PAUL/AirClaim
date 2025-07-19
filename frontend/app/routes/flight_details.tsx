@@ -315,7 +315,7 @@ const FlightDetailsPage = () => {
                             <div className="p-3 bg-gradient-to-r from-green-500 to-cyan-600 rounded-lg">
                                 <GiPodiumWinner className="text-white text-xl" />
                             </div>
-                            <p className="text-gray-400 text-left">If your prediction is correct, you claim your full insurance and win 5FLR.</p>
+                            <p className="text-gray-400 text-left">If your prediction is correct, you get your full insurance and win 5FLR.</p>
                         </div>
                         <div className="flex items-center gap-3">
                             <div className="p-3 bg-gradient-to-r from-green-500 to-cyan-600 rounded-lg">

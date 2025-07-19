@@ -4,7 +4,7 @@ import { useGeneral } from '~/context/GeneralContext';
 
 const LuckySpinGame = () => {
   const { isSidebarCollapsed } = useGeneral();
-  const [numbers, setNumbers] = useState(['1-20', '1-10', '1-20', '1-20', '1-20']);
+  const [numbers, setNumbers] = useState(['', '', '', '', '']);
   const [stakeAmount, setStakeAmount] = useState(5);
   const [isSpinning, setIsSpinning] = useState(false);
   const [currentResult, setCurrentResult] = useState(['--', '--', '--', '--', '--']);
@@ -27,7 +27,7 @@ const LuckySpinGame = () => {
   };
 
   const clearAll = () => {
-    setNumbers(['1-20', '1-20', '1-20', '1-20', '1-20']);
+    setNumbers(['', '', '', '', '']);
     setCurrentResult(['--', '--', '--', '--', '--']);
   };
 

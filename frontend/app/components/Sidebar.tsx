@@ -3,7 +3,7 @@ import { FaPlane, FaDollarSign, FaUserFriends, FaMoneyCheckAlt, FaChartBar, FaCh
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react'; // Import icons for toggle
 import { useGeneral } from '../context/GeneralContext';
-import { GiShipWheel } from 'react-icons/gi';
+import { GiBattleship, GiShipWheel } from 'react-icons/gi';
 
 const Sidebar = () => {
   const navigate = useNavigate();
@@ -86,10 +86,23 @@ const Sidebar = () => {
               <li className='cursor-pointer'>
                 <span
                   onClick={() => navigate('/lucky-spin')}
-                  className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-300 hover:bg-[#18191b] transition"
+                  className={`flex items-center gap-3 px-4 py-2 rounded-lg text-gray-300 hover:bg-[#18191b] transition ${
+                    window.location.pathname === '/lucky-spin' ? 'bg-[#18191b] text-green-400' : ''
+                  }`}
                 >
                   <GiShipWheel />
                   {!isSidebarCollapsed && 'Lucky Spin'}
+                </span>
+              </li>
+              <li className='cursor-pointer'>
+                <span
+                  onClick={() => navigate('/battle-ship')}
+                  className={`flex items-center gap-3 px-4 py-2 rounded-lg text-gray-300 hover:bg-[#18191b] transition ${
+                    window.location.pathname === '/battle-ship' ? 'bg-[#18191b] text-green-400' : ''
+                  }`}
+                >
+                  <GiBattleship />
+                  {!isSidebarCollapsed && 'Battle Ship'}
                 </span>
               </li>
             </ul>
