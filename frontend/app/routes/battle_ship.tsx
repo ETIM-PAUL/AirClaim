@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { GiMissileLauncher, GiSubmarineMissile } from 'react-icons/gi';
 import { TbDroneOff } from 'react-icons/tb';
+import { toast } from 'react-toastify';
 import Sidebar from '~/components/Sidebar';
 import { useGeneral } from '~/context/GeneralContext';
 
@@ -30,6 +31,11 @@ const ZombieBattleship = () => {
   };
 
   const dropDrone = () => {
+    if (stakeAmount > 5 || stakeAmount < 1)
+    {
+     toast.error("Staked amount must be between 1-5")
+     return;
+    } 
     if (isAttacking || selectedBox === null) return;
     
     setIsAttacking(true);
@@ -54,7 +60,7 @@ const ZombieBattleship = () => {
         prediction: selectedBox,
         target: target,
         isHit: isHit,
-        prize: isHit ? '+25 FLR' : '-5 FLR'
+        prize: isHit ? `+${stakeAmount*2}FLR` : `-${stakeAmount}FLR`
       });
       
       setTimeout(() => {
@@ -152,7 +158,7 @@ const ZombieBattleship = () => {
                 />
                 <span className="text-green-400 font-medium">FLR</span>
                 </div>
-                <p className="text-xs text-gray-400 mt-2">Fixed stake amount: {stakeAmount} FLR per attack</p>
+                <p className="text-xs text-gray-400 mt-2">Stake amount: maximum of 5 FLR per attack</p>
             </div>
 
             {/* Attack Button */}
@@ -312,7 +318,7 @@ const ZombieBattleship = () => {
                 </div>
                 <div className="flex items-start gap-3">
                     <div className="w-2 h-2 rounded-full bg-green-400 mt-2 flex-shrink-0"></div>
-                    <span>Correct prediction: Win 5x your stake (25 FLR)</span>
+                    <span>Correct prediction: Win 2x your stake ({stakeAmount * 2}FLR)</span>
                 </div>
                 <div className="flex items-start gap-3">
                     <div className="w-2 h-2 rounded-full bg-red-400 mt-2 flex-shrink-0"></div>
