@@ -2,20 +2,23 @@ import {
     prepareAttestationRequestBase,
     submitAttestationRequest,
     retrieveDataAndProofBase,
-  } from "./Base";
+  } from "./fdc";
 import { BrowserProvider } from "ethers";
 import { ethers } from "ethers";
 import { insuredFlightsAgencyAddress } from "~/utils";
 import insuredFlightsAgencyAbi from 'insuredFlightsAgency.json';
-import IJsonApiVerificationAbi from 'IJsonApiVerification.json';
+// import IJsonApiVerificationAbi from 'IJsonApiVerification.json';
 import Web3 from 'web3';
+import IWeb2JsonVerification from "../../artifacts/@flarenetwork/flare-periphery-contracts/coston2/IWeb2JsonVerification.sol/IWeb2JsonVerification.json";
+// use ABI
+const abi = IWeb2JsonVerification.abi;
 
 const web3 = new Web3();
 
 const FLIGHT_API_KEY = import.meta.env.VITE_FLIGHT_API_KEY;
 const COSTON2_DA_LAYER_URL = import.meta.env.VITE_COSTON2_DA_LAYER_URL;
-const JQ_VERIFIER_URL_TESTNET = import.meta.env.VITE_JQ_VERIFIER_URL_TESTNET;
-const JQ_VERIFIER_API_KEY_TESTNET = import.meta.env.VITE_JQ_VERIFIER_API_KEY_TESTNET;
+const WEB2JSON_VERIFIER_URL_TESTNET = import.meta.env.WEB2JSON_VERIFIER_URL_TESTNET;
+const VERIFIER_API_KEY_TESTNET = import.meta.env.VERIFIER_API_KEY_TESTNET;
 
   
   export const postprocessJq = `{
@@ -77,9 +80,9 @@ const JQ_VERIFIER_API_KEY_TESTNET = import.meta.env.VITE_JQ_VERIFIER_API_KEY_TES
         }`;
 
           // Configuration constants
-export const attestationTypeBase = "IJsonApi";
-export const sourceIdBase = "WEB2";
-export const verifierUrlBase = JQ_VERIFIER_URL_TESTNET;
+export const attestationTypeBase = "Web2Json";
+export const sourceIdBase = "PublicWeb2";
+export const verifierUrlBase = WEB2JSON_VERIFIER_URL_TESTNET;
 
 async function prepareUrl(accessKey: string, flightNo: string, airlineIcao: string) {
     return `https://api.aviationstack.com/v1/flights?access_key=${accessKey}&flight_number=${flightNo}&airline_icao=${airlineIcao}&limit=1`;
@@ -96,12 +99,12 @@ async function prepareAttestationRequest(
         abi_signature: abiSignature,
     };
 
-    const url = `${verifierUrlBase}JsonApi/prepareRequest`; 
-    const jq_apiKey = JQ_VERIFIER_API_KEY_TESTNET!;
+    const url = `${verifierUrlBase}Web2Json/prepareRequest`; 
+    const apiKey = VERIFIER_API_KEY_TESTNET!;
 
     const response = await prepareAttestationRequestBase(
         url,
-        jq_apiKey,
+        apiKey,
         attestationTypeBase,
         sourceIdBase,
         requestBody
@@ -120,12 +123,10 @@ async function prepareAttestationRequest(
 async function retrieveDataAndProof(
     abiEncodedRequest: string,
     roundId: number,
-    walletProvider:any
   ) {
-    const ethersProvider = new BrowserProvider(walletProvider as any);
     const url = `${COSTON2_DA_LAYER_URL}api/v1/fdc/proof-by-request-round-raw`;
     console.log("Url:", url, "\n");
-    return await retrieveDataAndProofBase(url, abiEncodedRequest, roundId, ethersProvider);
+    return await retrieveDataAndProofBase(url, abiEncodedRequest, roundId);
 }
 
 async function addFlight(
@@ -133,11 +134,14 @@ async function addFlight(
     aircraft_icao: string,
     flight_no: string,
     passengers: string[],
-    flight_price: string,
     proof: any,
     walletProvider: any
 ) {
-    const responseType: any = IJsonApiVerificationAbi.abi[0].inputs[0].components[1];
+    // const responseType: any = IJsonApiVerificationAbi.abi[0].inputs[0].components[1];
+
+    // A piece of black magic that allows us to read the response type from an artifact
+    const responseType = (abi as any)[0].inputs[0].components[1];
+    console.log("Response type:", responseType, "\n");
 
     try {
     // Decode the response
@@ -152,14 +156,13 @@ async function addFlight(
       };
     
 
-    const requiredAmount = await agency.getCostOfInsurance(flight_price, passengers);
+    const requiredAmount = await agency.getCostOfInsurance(passengers);
 
     // Try with a much lower gas limit first to test
     const gasEstimate = await agency.insureFlight.estimateGas(
         aircraft_icao,
         flight_no,
         passengers,
-        flight_price,
         proofObject,
         {
           value: requiredAmount.toString(),
@@ -174,7 +177,7 @@ async function addFlight(
       const gasLimit = Number(gasEstimate) * 1.5;
       console.log("Using gas limit:", gasLimit);
 
-    const tx = await agency.insureFlight(aircraft_icao, flight_no, passengers, flight_price, proofObject, {
+    const tx = await agency.insureFlight(aircraft_icao, flight_no, passengers, proofObject, {
         value: requiredAmount.toString(),
         from: await walletProvider.getAddress(),
         gas: gasLimit
@@ -189,7 +192,7 @@ async function addFlight(
 }
 
 
-export async function insureFlight(aircraft_icao: string, flight_no: string, flight_price: string, passengers: string[], walletProvider: any) {
+export async function insureFlight(aircraft_icao: string, flight_no: string, passengers: any[], walletProvider: any) {
     try {
         const ethersProvider = new BrowserProvider(walletProvider as any);
         const signer = await ethersProvider.getSigner();
@@ -199,10 +202,10 @@ export async function insureFlight(aircraft_icao: string, flight_no: string, fli
         const apiUrl = await prepareUrl(FLIGHT_API_KEY!, flight_no, aircraft_icao);
 
         const data = await prepareAttestationRequest(apiUrl, postprocessJq, abiSignature);
-        const roundId = await submitAttestationRequest(signer, data.abiEncodedRequest, ethersProvider);
-        const proof = await retrieveDataAndProof(data.abiEncodedRequest, roundId, walletProvider);
+        const roundId = await submitAttestationRequest(data.abiEncodedRequest);
+        const proof = await retrieveDataAndProof(data.abiEncodedRequest, roundId);
         try {
-            await addFlight(insuredFlightsAgencyContract, aircraft_icao, flight_no, passengers, flight_price, proof, signer);
+            await addFlight(insuredFlightsAgencyContract, aircraft_icao, flight_no, passengers, proof, signer);
             return "Flight updated successfully";
         } catch (error) {
             console.log("error", error)

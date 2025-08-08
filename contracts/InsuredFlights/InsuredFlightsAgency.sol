@@ -1,10 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
-import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston/ContractRegistry.sol";
-import {IJsonApi} from "@flarenetwork/flare-periphery-contracts/coston/IJsonApi.sol";
-import {IFdcVerification} from "@flarenetwork/flare-periphery-contracts/coston/IFdcVerification.sol";
-import {RandomNumberV2Interface} from "@flarenetwork/flare-periphery-contracts/coston/RandomNumberV2Interface.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
+import {IWeb2Json} from "@flarenetwork/flare-periphery-contracts/coston2/IWeb2Json.sol";
+import {RandomNumberV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/RandomNumberV2Interface.sol";
+
+    struct Passenger {
+        address wallet;
+        string ticketType;
+        uint256 ticketPrice;
+    }
 
     struct InsuredFlight {
         string aircraftIcao;
@@ -14,7 +20,7 @@ import {RandomNumberV2Interface} from "@flarenetwork/flare-periphery-contracts/c
         string arrivalAirport;
         uint256 flightDelayedTime;
         string flightNo;
-        address[] passengers;
+        Passenger[] passengers;
         uint256 flight_price;
         string status;
         uint lastChecked;
@@ -65,29 +71,25 @@ contract insuredFlightsAgency {
         _setNewSecretNumber();
     }
 
-    function isJsonApiProofValid(IJsonApi.Proof calldata _proof) private view returns (bool) {
-        return ContractRegistry.auxiliaryGetIJsonApiVerification().verifyJsonApi(_proof);
-    }
-
-    function checkFlightDelay(IJsonApi.Proof calldata data, uint256 insuredFlightId) external {
+    function checkFlightDelay(IWeb2Json.Proof calldata data, uint256 insuredFlightId) external {
         InsuredFlight memory insuredFlight = _insuredFlight[insuredFlightId];
-        require(block.timestamp - insuredFlight.lastChecked > 600, "Flight check is at 10 minutes interval");
-        require(isJsonApiProofValid(data), "Invalid proof");
-
-        DataTransportObject memory dto = abi.decode(data.data.responseBody.abi_encoded_data, (DataTransportObject));
-
         require(
            insuredFlight.insuranceId < insuredFlightIds,
            "Invalid Insurance"
         );
-
+        require((msg.sender == insuredFlight.insurer || insuredFlight.passengers[0].wallet == msg.sender || msg.sender == owner), "Either Insurer or Passenger can check flight delay");
         require(
             keccak256(abi.encodePacked(insuredFlight.status)) == keccak256(abi.encodePacked("scheduled")), 
             "Flight status already updated"
         );
+        require(block.timestamp - insuredFlight.lastChecked > 600, "Flight check is at 10 minutes interval");
 
-        require((msg.sender == insuredFlight.insurer || insuredFlightPassengersStatus[insuredFlightId][msg.sender]), "Either Insurer or Passenger can check flight delay");
+        require(isJsonApiProofValid(data), "Invalid proof");
 
+        DataTransportObject memory dto = abi.decode(
+                    data.data.responseBody.abiEncodedData,
+                    (DataTransportObject)
+                );
 
         if (uint256(dto.flight_delayed_time) >= insurance_delay_time && 
         (keccak256(abi.encodePacked(dto.flight_status)) != keccak256(abi.encodePacked("active")) || 
@@ -101,44 +103,59 @@ contract insuredFlightsAgency {
         emit FlightInfoUpdated(insuredFlightId, insuredFlight.flightDelayedTime, insuredFlight.status);
     }
 
-    function insureFlight(string memory aircraft_icao, string memory flight_no, address[] memory passengers, uint256 flight_price, IJsonApi.Proof calldata data) external payable {
-        require(msg.value == ((passengers.length * flight_price * 10) / 100 + INSURANCE_PRICE), "Invalid amount");
+    function insureFlight(
+        string memory aircraft_icao,
+        string memory flight_no,
+        Passenger[] memory passengers,
+        IWeb2Json.Proof calldata data
+    ) external payable {
+        uint256 total = 0;
+        for (uint256 i = 0; i < passengers.length; i++) {
+            total += (passengers[i].ticketPrice * 10) / 100;
+        }
+        require(msg.value == total + INSURANCE_PRICE, "Invalid amount");
 
         require(isJsonApiProofValid(data), "Invalid proof");
 
-        DataTransportObject memory dto = abi.decode(data.data.responseBody.abi_encoded_data, (DataTransportObject));
+        DataTransportObject memory dto = abi.decode(
+            data.data.responseBody.abiEncodedData,
+            (DataTransportObject)
+        );
 
         require(
             keccak256(abi.encodePacked(dto.flight_status)) == keccak256(abi.encodePacked("scheduled")), 
             "Flight No doesn't match a scheduled flight"
         );
 
+        _insuredFlight[insuredFlightIds].aircraftIcao = aircraft_icao;
+        _insuredFlight[insuredFlightIds].aircraftName = dto.aircraft_name;
+        _insuredFlight[insuredFlightIds].flightDate = dto.flight_date;
+        _insuredFlight[insuredFlightIds].departureAirport = dto.departure_airport;
+        _insuredFlight[insuredFlightIds].arrivalAirport = dto.arrival_airport;
+        _insuredFlight[insuredFlightIds].flightDelayedTime = uint256(dto.flight_delayed_time);
+        _insuredFlight[insuredFlightIds].flightNo = flight_no;
+        _insuredFlight[insuredFlightIds].flight_price = total;
+        _insuredFlight[insuredFlightIds].status = dto.flight_status;
+        _insuredFlight[insuredFlightIds].lastChecked = block.timestamp;
+        _insuredFlight[insuredFlightIds].insurer = msg.sender;
+        _insuredFlight[insuredFlightIds].insuranceId = insuredFlightIds;
+
         for (uint256 i = 0; i < passengers.length; i++) {
-            insuredFlightPassengersStatus[insuredFlightIds][passengers[i]] = true;
+            insuredFlightPassengersStatus[insuredFlightIds][passengers[i].wallet] = true;
+             _insuredFlight[insuredFlightIds].passengers.push(passengers[i]);
         }
 
-        _insuredFlight[insuredFlightIds] = InsuredFlight({
-            aircraftIcao: aircraft_icao,
-            aircraftName: dto.aircraft_name,
-            flightDate: dto.flight_date,
-            departureAirport: dto.departure_airport,
-            arrivalAirport: dto.arrival_airport,
-            flightDelayedTime: uint256(dto.flight_delayed_time),
-            flightNo: flight_no,
-            passengers: passengers,
-            flight_price: flight_price,
-            status: dto.flight_status,
-            lastChecked: block.timestamp,
-            insurer: msg.sender,
-            insuranceId: insuredFlightIds
-        });
         insuredFlightIds++;
 
         emit FlightInsured(insuredFlightIds);
     }
 
-    function getCostOfInsurance(uint256 flight_price, address[] memory passengers) public view returns (uint256) {
-        return (passengers.length * flight_price * 10) / 100 + INSURANCE_PRICE;
+    function getCostOfInsurance(Passenger[] memory passengers) public view returns (uint256) {
+        uint256 total = 0;
+        for (uint256 i = 0; i < passengers.length; i++) {
+            total += (passengers[i].ticketPrice * 10) / 100;
+        }
+        return total + INSURANCE_PRICE;
     }
 
 
@@ -146,10 +163,10 @@ contract insuredFlightsAgency {
         InsuredFlight memory insuredFlight = _insuredFlight[insuredFlightId];
         
         require(keccak256(abi.encodePacked(insuredFlight.flightNo)) == keccak256(abi.encodePacked(flight_no)), "Flight No doesn't match");
+        require(insuredFlight.flightDelayedTime >= insurance_delay_time, "Flight Not Delayed");
         require(insuredFlightPassengersStatus[insuredFlightId][msg.sender], 
             "Passenger not insured OR Insurance already redeemed"
         );
-        require(insuredFlight.flightDelayedTime >= insurance_delay_time, "Flight Not Delayed");
 
         insuredFlightPassengersStatus[insuredFlightId][msg.sender] = false;
         secretNumber = _secretNumber;
@@ -221,6 +238,13 @@ contract insuredFlightsAgency {
     }
 
     function abiSignatureHack(DataTransportObject calldata dto) public pure {}
+
+    function isJsonApiProofValid(
+        IWeb2Json.Proof calldata _proof
+    ) private view returns (bool) {
+        // Inline the check for now until we have an official contract deployed
+        return ContractRegistry.getFdcVerification().verifyJsonApi(_proof);
+    }
 
     function recieve() external payable {}
 }
