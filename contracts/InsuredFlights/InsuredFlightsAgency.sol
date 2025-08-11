@@ -28,6 +28,14 @@ import {RandomNumberV2Interface} from "@flarenetwork/flare-periphery-contracts/c
         uint256 insuranceId;
     }
 
+    struct AllClaims {
+        string aircraftName;
+        uint256 amountClaimed;
+        uint dateClaimed;
+        address insuree;
+        uint256 insuranceId;
+    }
+
     struct DataTransportObject {
     string aircraft_name;
     string aircraft_reg;
@@ -41,12 +49,15 @@ import {RandomNumberV2Interface} from "@flarenetwork/flare-periphery-contracts/c
 
 contract insuredFlightsAgency {
     uint256 public insuredFlightIds;
+    uint256 public insuranceClaimsIds;
     uint256 public INSURANCE_PRICE;
     uint256 public insurance_delay_time;
     mapping(uint256 => InsuredFlight) public _insuredFlight;
+    mapping(uint256 => AllClaims) public _insuranceClaims;
     mapping(uint256 => mapping(address => bool)) public insuredFlightPassengersStatus;
 
     uint16 private _secretNumber;
+    uint256 public _totalAmountInsurance;
     uint256 public constant _maxNumber = 20;
     RandomNumberV2Interface public _generator;
     
@@ -54,7 +65,7 @@ contract insuredFlightsAgency {
 
     event FlightInfoUpdated(uint256 insuredFlightId, uint256 flightDelayedTime, string flightStatus);
     event FlightInsured(uint256 insuredFlightId);
-    event FlightClaimed(uint256 insuredFlightId, address passenger);
+    event FlightClaimed(uint256 insuredFlightId, address passenger, uint256 secretNumber);
     
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner can call this function");
@@ -65,6 +76,7 @@ contract insuredFlightsAgency {
         INSURANCE_PRICE = _insurancePrice;
         insurance_delay_time = 30;
         insuredFlightIds = 1;
+        insuranceClaimsIds = 1;
         owner = msg.sender;
 
         _generator = ContractRegistry.getRandomNumberV2();
@@ -140,9 +152,10 @@ contract insuredFlightsAgency {
         _insuredFlight[insuredFlightIds].insurer = msg.sender;
         _insuredFlight[insuredFlightIds].insuranceId = insuredFlightIds;
 
+        _totalAmountInsurance += total;
+
         for (uint256 i = 0; i < passengers.length; i++) {
-            insuredFlightPassengersStatus[insuredFlightIds][passengers[i].wallet] = true;
-             _insuredFlight[insuredFlightIds].passengers.push(passengers[i]);
+            _insuredFlight[insuredFlightIds].passengers.push(passengers[i]);
         }
 
         insuredFlightIds++;
@@ -170,29 +183,38 @@ contract insuredFlightsAgency {
 
         insuredFlightPassengersStatus[insuredFlightId][msg.sender] = false;
         secretNumber = _secretNumber;
+        uint256 claimedInsurance = 0;
 
-        if(predictedNumber > 0 && predictedNumber == _secretNumber){
+        if(predictedNumber > 0){
+            if (predictedNumber == _secretNumber) {
             (bool success, ) = payable(msg.sender).call{value: (insuredFlight.flight_price * 10) / 100}("");
             require(success, "Transfer failed");
+            claimedInsurance = (insuredFlight.flight_price * 10) / 100;
+            _setNewSecretNumber();
+            } else {
             (bool success2, ) = payable(msg.sender).call{value: 5e17}("");
             require(success2, "Insufficient balance");
+            claimedInsurance = (insuredFlight.flight_price * 10) / 100;
             _predictedSuccess = true;
             _setNewSecretNumber();
+            }
         }
 
         else if(predictedNumber > 0 && predictedNumber != _secretNumber){
             (bool success, ) = payable(msg.sender).call{value: ((insuredFlight.flight_price * 10) / 100)/2}("");
             require(success, "Transfer failed");
+            claimedInsurance = (insuredFlight.flight_price * 10) / 100;
             _predictedSuccess = false;
             _setNewSecretNumber();
         }
 
-        else {
-            (bool success, ) = payable(msg.sender).call{value: (insuredFlight.flight_price * 10) / 100}("");
-            require(success, "Transfer failed");
-        }
-
-        emit FlightClaimed(insuredFlightId, msg.sender);
+        _insuranceClaims[insuranceClaimsIds].aircraftName = insuredFlight.aircraftName;
+        _insuranceClaims[insuranceClaimsIds].amountClaimed = claimedInsurance;
+        _insuranceClaims[insuranceClaimsIds].dateClaimed = block.timestamp;
+        _insuranceClaims[insuranceClaimsIds].insuree = msg.sender;
+        _insuranceClaims[insuranceClaimsIds].insuranceId = insuredFlightId;
+        insuranceClaimsIds++;
+        emit FlightClaimed(insuredFlightId, msg.sender, secretNumber);
     }
 
     function getAllInsureFlights() public view returns (InsuredFlight[] memory) {
@@ -203,13 +225,12 @@ contract insuredFlightsAgency {
         return result;
     }
 
-    function getInsuredFlight(uint256 insuredFlightId) public view returns (InsuredFlight memory) {
-        require(insuredFlightId < insuredFlightIds, "Invalid insured flight");
-        return _insuredFlight[insuredFlightId];
-    }
-
-    function checkFlightInsured(uint insuredFlightId, address passenger) public view returns (bool status) {
-        return insuredFlightPassengersStatus[insuredFlightId][passenger];
+    function getAllClaims() public view returns (AllClaims[] memory) {
+        AllClaims[] memory result = new AllClaims[](insuranceClaimsIds);
+        for (uint256 i = 0; i < insuranceClaimsIds; i++) {
+            result[i] = _insuranceClaims[i];
+        }
+        return result;
     }
 
     function setInsurancePrice(uint256 _insurancePrice) external onlyOwner {
@@ -220,10 +241,6 @@ contract insuredFlightsAgency {
 
     function getInsurancePrice() external view returns (uint256) {
         return INSURANCE_PRICE;
-    }
-
-    function transferOwnership(address newOwner) external onlyOwner {
-        owner = newOwner;
     }
 
     function transferAccumulatedFees(address to) external onlyOwner {

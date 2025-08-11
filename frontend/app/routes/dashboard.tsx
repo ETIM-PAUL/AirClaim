@@ -11,7 +11,7 @@ import { BrowserProvider, ethers } from "ethers";
 import { barData, claimAvatars, COLORS, flights, insuredFlightsAgencyAddress, lineData, pieData } from '~/utils';
 import insuredFlightsAgencyAbi from 'insuredFlightsAgency.json';
 import { toast } from 'react-toastify';
-import { insureFlight } from 'scripts/insureFlight';
+// import { insureFlight } from 'scripts/insureFlight';
 import { FaPlane, FaDollarSign, FaUserFriends, FaMoneyCheckAlt, FaChartBar, FaChartPie, FaChartLine, FaSuitcase, FaHeartbeat, FaExclamationCircle, FaTachometerAlt, FaPlaneDeparture, FaFileAlt, FaChartArea, FaUserCircle, FaCog, FaFileExport, FaClipboardList } from "react-icons/fa";
 import StatCard from "../components/statCard";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
@@ -52,7 +52,7 @@ const Dashboard = () => {
     navigate('/');
   };
   
-  const handleInsureFlight = () => {
+  const insureFlight = () => {
     setIsModalOpen(true);
   };
   
@@ -66,7 +66,7 @@ const Dashboard = () => {
         passengerWalletAddresses: formData.passengerWalletAddresses,
       }
       console.log("newFlight", newFlight)
-      const result = await insureFlight(newFlight.aircraftCode, newFlight.flightNumber, newFlight.flightPrice, newFlight.passengerWalletAddresses, walletProvider);
+      const result = await insureFlight();
       loadFlights();
       toast.success(result as any);
 

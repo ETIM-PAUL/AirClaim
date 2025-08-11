@@ -64,7 +64,7 @@ const customNetwork = {
   },
 };
 
-const networks: any = [mainnet, customNetwork];
+const networks: any = [customNetwork];
 
 // 4. Create Ethers Adapter
 const ethersAdapter = new EthersAdapter(
