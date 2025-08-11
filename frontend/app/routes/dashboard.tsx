@@ -33,13 +33,89 @@ interface Flight {
   passengerWalletAddresses: string[];
 }
 
+// Skeleton components
+const StatCardSkeleton = () => (
+  <div className="bg-[#101112] rounded-2xl p-6 shadow-xl">
+    <div className="flex items-center justify-between mb-4">
+      <Skeleton width={120} height={20} />
+      <Skeleton width={40} height={40} circle />
+    </div>
+    <Skeleton width={80} height={32} className="mb-2" />
+    <Skeleton width={100} height={16} />
+  </div>
+);
+
+const ChartSkeleton = () => (
+  <div className="bg-[#101112] rounded-2xl p-6 shadow-xl h-80">
+    <div className="flex items-center mb-4 gap-2">
+      <Skeleton width={20} height={20} />
+      <Skeleton width={150} height={20} />
+    </div>
+    <Skeleton height="85%" />
+  </div>
+);
+
+const ClaimsSkeleton = () => (
+  <div className="bg-[#101112] rounded-2xl p-6 shadow-xl flex flex-col gap-4">
+    <div className="flex items-center mb-2 gap-2">
+      <Skeleton width={20} height={20} />
+      <Skeleton width={100} height={20} />
+    </div>
+    <div className="space-y-4">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="flex items-center justify-between p-2">
+          <div className="flex items-center gap-3">
+            <Skeleton width={32} height={32} circle />
+            <div>
+              <Skeleton width={80} height={16} className="mb-1" />
+              <Skeleton width={120} height={12} />
+            </div>
+          </div>
+          <Skeleton width={60} height={20} />
+        </div>
+      ))}
+      <Skeleton height={40} />
+    </div>
+  </div>
+);
+
+const TableSkeleton = () => (
+  <div className="bg-[#101112] rounded-2xl p-6 shadow-xl">
+    <div className="flex items-center justify-between mb-4">
+      <Skeleton width={150} height={20} />
+      <Skeleton width={80} height={32} />
+    </div>
+    <div className="space-y-3">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div key={i} className="flex justify-between items-center py-2">
+          <Skeleton width={60} height={16} />
+          <Skeleton width={100} height={16} />
+          <Skeleton width={80} height={16} />
+          <Skeleton width={80} height={16} />
+          <Skeleton width={60} height={16} />
+          <Skeleton width={80} height={16} />
+          <Skeleton width={60} height={16} />
+        </div>
+      ))}
+    </div>
+    <div className="flex justify-between items-center mt-4">
+      <Skeleton width={120} height={16} />
+      <div className="flex gap-1">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <Skeleton key={i} width={32} height={32} />
+        ))}
+      </div>
+    </div>
+  </div>
+);
 
 const Dashboard = () => {
   const { disconnect } = useDisconnect();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const[isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const[selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true);
   
   const navigate = useNavigate();
   const { address, isConnected } = useAppKitAccount();
@@ -78,12 +154,9 @@ const Dashboard = () => {
   };
   
   const fetchMockFlights = async (): Promise<Flight[]> => {
-    // Simulate an API call with mock data
     if (!isConnected) navigate('/');
 
     const ethersProvider = new BrowserProvider(walletProvider as any);
-
-    // The Contract object
     const insuredFlightsAgencyContract = new ethers.Contract(insuredFlightsAgencyAddress, insuredFlightsAgencyAbi.abi, ethersProvider);
     const allInsuredFlights = await insuredFlightsAgencyContract.getAllInsureFlights();
 
@@ -103,9 +176,7 @@ const Dashboard = () => {
       insuranceFlightId: flight[12],
     }));
     
-    // Simulate a delay (e.g., 2 seconds)
     await new Promise((resolve) => setTimeout(resolve, 2000));
-  
     return flightsAsObjects;
   };
 
@@ -132,8 +203,55 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    // loadFlights();
+    // Simulate initial loading
+    const timer = setTimeout(() => {
+      setIsInitialLoading(false);
+    }, 3000); // Show skeleton for 3 seconds
+
+    return () => clearTimeout(timer);
   }, []);
+
+  // Show skeleton loading
+  if (isInitialLoading) {
+    return (
+      <div className="flex min-h-screen bg-gradient-to-br from-gray-300 via-black to-gray-950">
+        <Sidebar />
+        <main className={`flex-1 ${isSidebarCollapsed ? 'pl-20' : 'pl-64'} p-6 text-white`}>
+          {/* Header Skeleton */}
+          <div className="mb-8">
+            <Skeleton width={400} height={32} className="mb-2" />
+            <Skeleton width={300} height={16} />
+          </div>
+          <hr className="border-gray-800 mb-8" />
+          
+          {/* Stat Cards Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+          </div>
+          
+          {/* Main Content Skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-8">
+              <ChartSkeleton />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <ChartSkeleton />
+                <ChartSkeleton />
+              </div>
+            </div>
+            <ClaimsSkeleton />
+          </div>
+          
+          {/* Table Skeleton */}
+          <div className="mt-10">
+            <TableSkeleton />
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-950">
@@ -143,11 +261,11 @@ const Dashboard = () => {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight">Welcome back to <span className="text-green-400"> Airclaim</span></h1>
-            <p className="text-gray-400 mt-1">Here’s a summary of all insured flights and claims</p>
+            <p className="text-gray-400 mt-1">Here's a summary of all insured flights and claims</p>
           </div>
-
         </div>
         <hr className="border-gray-800 mb-8" />
+        
         {/* Stat Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
           <StatCard title="Insured Flights" value="1,284" change="12.5%" positive icon={<FaPlane className="text-green-400 text-2xl" />} />
@@ -155,6 +273,7 @@ const Dashboard = () => {
           <StatCard title="Passengers Insured" value="3,569" change="5.7%" positive icon={<FaUserFriends className="text-green-400 text-2xl" />} />
           <StatCard title="Claimed Amount" value="342K FLR" change="2.8%" positive={false} icon={<FaMoneyCheckAlt className="text-red-400 text-2xl" />} />
         </div>
+        
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
@@ -177,6 +296,7 @@ const Dashboard = () => {
                 </BarChart>
               </ResponsiveContainer>
             </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Pie Chart Card */}
               <div className="bg-[#101112] rounded-2xl p-6 shadow-xl h-80 transition-transform hover:scale-[1.01]">
@@ -201,7 +321,7 @@ const Dashboard = () => {
                     </Pie>
                   </PieChart>
                 </ResponsiveContainer>
-                <div className="flex flex-wra gap-2 mt-4">
+                <div className="flex flex-wrap gap-2 mt-4">
                   <span className="flex items-center gap-1 text-xs text-green-300"><FaExclamationCircle className="text-green-400" /> Flight Cancellation</span>
                   <span className="flex items-center gap-1 text-xs text-cyan-300"><FaSuitcase className="text-cyan-400" /> Baggage Loss</span>
                   <span className="flex items-center gap-1 text-xs text-blue-300"><FaPlane className="text-blue-400" /> Flight Delay</span>
@@ -209,6 +329,7 @@ const Dashboard = () => {
                   <span className="flex items-center gap-1 text-xs text-red-300"><FaExclamationCircle className="text-red-400" /> Other</span>
                 </div>
               </div>
+              
               {/* Line Chart Card */}
               <div className="bg-[#101112] rounded-2xl p-6 shadow-xl h-80 transition-transform hover:scale-[1.01]">
                 <div className="flex items-center mb-4 gap-2">
@@ -227,6 +348,7 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
+          
           {/* Latest Claims Card */}
           <div className="bg-[#101112] rounded-2xl p-6 shadow-xl flex flex-col gap-4">
             <div className="flex items-center mb-2 gap-2">
@@ -255,6 +377,7 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+        
         {/* Recent Insured Flights Table */}
         <div className="bg-[#101112] rounded-2xl p-6 mt-10 shadow-xl">
           <div className="flex items-center justify-between mb-4">
@@ -319,7 +442,6 @@ const Dashboard = () => {
       )}
     </div>
   );
-
 };
 
 export default Dashboard;
