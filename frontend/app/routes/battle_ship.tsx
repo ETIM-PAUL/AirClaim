@@ -6,12 +6,12 @@ import { toast } from 'react-toastify';
 import Sidebar from '~/components/Sidebar';
 import { useGeneral } from '~/context/GeneralContext';
 import { ethers, Contract, BrowserProvider, BigNumberish, formatEther, parseEther } from 'ethers';
-import { abi as BATTLE_SHIP_ABI } from "../../../contracts/BattleShip/BattleShip.json"
+import { abi as BATTLE_SHIP_ABI } from "../../../artifacts/contracts/BattleShip/BattleShip.sol/BattleShip.json"
 import { BattleShipInstance } from "../../../typechain-types"
 import { formatLocalized } from '~/utils';
 import { fromUnixTime } from 'date-fns';
 
-const BATTLE_SHIP_ADDRESS = "0xCE0f32b84940517182F2E33012db8F56062640c2"
+const BATTLE_SHIP_ADDRESS = "0x13E9EBB6d4697EE517e2f4201cC12e4dBF0a079a"
 
 interface RecentBattle {
     prediction: string
@@ -27,6 +27,7 @@ const ZombieBattleship = () => {
   const [stakeAmount, setStakeAmount] = useState(1);
   const [isAttacking, setIsAttacking] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
+  const [refetch, setRefetch] = useState(false);
   const [targetBox, setTargetBox] = useState<number>(NaN);
   const [explodingBox, setExplodingBox] = useState<number>(NaN);
   const [gameResult, setGameResult] = useState<any>(null);
@@ -38,7 +39,7 @@ const ZombieBattleship = () => {
   
   useEffect(() => {
     fetchUserRecentBattles()
-  }, [address])
+  }, [address, refetch])
 
   async function fetchUserRecentBattles() {
     function transformBattleData(data: BigNumberish[]) {
@@ -109,23 +110,21 @@ const ZombieBattleship = () => {
         const BattleShip: BattleShipInstance = new Contract(BATTLE_SHIP_ADDRESS, BATTLE_SHIP_ABI, signer)
         const prediction = selectedBox
         const stakeAmountEth = parseEther(stakeAmount.toString())
-        console.log("predicted box", prediction, "raw stake amount", stakeAmount, "stake amount", stakeAmountEth)
         const tx = await BattleShip.dropDrone(prediction, {value: stakeAmountEth})
         const receipt = await tx.wait();
     
         // Filter logs for your event
         const eventTopic = BattleShip.interface.getEvent("DroneDropped").topicHash;
-
         const log = receipt.logs.find((l: any) => l.topics[0] === eventTopic);
-        console.log('event topic', eventTopic, 'log', log)
+        // console.log('event topic', eventTopic, 'log', log)
         if (log) {
             const parsed = BattleShip.interface.parseLog(log);
-            const player = parsed.args['0']
-            const prediction = Number(parsed.args['1'])
+            // const player = parsed.args['0']
+            // const prediction = Number(parsed.args['1'])
             const target = Number(parsed.args['2'])
-            const result = Boolean(Number(parsed.args['3']))
+            const result = parsed.args['3'] === '0' ? true : false // HIT - 0, MISS - 1
             const prize = parsed.args['4']
-            const time = parsed.args['5']
+            // const time = parsed.args['5']
             setTargetBox(target)
             setExplodingBox(target);
 
@@ -146,8 +145,9 @@ const ZombieBattleship = () => {
             setTimeout(() => {
                 setExplodingBox(NaN);
                 setIsAttacking(false);
+                setRefetch(true)
             }, 1500);
-        }
+        } else toast.error("Unable to fetch battle result")
         
     } catch (error) {
         console.error(error)
@@ -155,34 +155,6 @@ const ZombieBattleship = () => {
         setExplodingBox(NaN);
         setIsAttacking(false);
     }
-    
-    // Random target selection (0-15)
-    // const target:any = Math.floor(Math.random() * 16);
-    // setTargetBox(target);
-    
-    // Wait for drone drop animation
-    // setTimeout(() => {
-    //   setExplodingBox(target);
-      
-    //   // Remove zombie from grid
-    //   const newGrid = [...zombieGrid];
-    //   newGrid[target] = false;
-    //   setZombieGrid(newGrid);
-      
-    //   // Check if prediction was correct
-    //   const isHit = selectedBox === target;
-    //   setGameResult({
-    //     prediction: selectedBox,
-    //     target: target,
-    //     isHit: isHit,
-    //     prize: isHit ? `+${stakeAmount*2}FLR` : `-${stakeAmount}FLR`
-    //   });
-      
-    //   setTimeout(() => {
-    //     setExplodingBox(NaN);
-    //     setIsAttacking(false);
-    //   }, 1500);
-    // }, 3000);
   };
 
   const resetGrid = () => {
@@ -322,28 +294,54 @@ const ZombieBattleship = () => {
             {/* Recent Battles */}
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
                 <h3 className="text-lg font-semibold mb-4">Recent Battles</h3>
-                <div className="space-y-1">
-                <div className="grid grid-cols-5 gap-2 text-xs text-gray-400 pb-2 border-b border-gray-700">
-                    <span>Time</span>
-                    <span>Prediction</span>
-                    <span>Target</span>
-                    <span>Result</span>
-                    <span>Prize</span>
-                </div>
-                {recentBattles.map((battle, index) => (
-                    <div key={index} className="grid grid-cols-5 gap-2 text-sm py-2">
-                    <span className="text-gray-300">{battle.time}</span>
-                    <span className="text-gray-300">Box {battle.prediction}</span>
-                    <span className="text-gray-300">Box {battle.target}</span>
-                    <span className={battle.result === 'Hit' ? 'text-green-400' : 'text-red-400'}>
-                        {battle.result}
-                    </span>
-                    <span className={battle.prize.startsWith('+') ? 'text-green-400' : 'text-red-400'}>
-                        {battle.prize}
-                    </span>
+                {!isFetching && recentBattles.length === 0 && (
+                    <div className="space-y-1 flex flex-col items-center">
+                        <p className="text-sm text-gray-400">No battles yet</p>
                     </div>
-                ))}
-                </div>
+                )}
+                {!isFetching && recentBattles.length > 0 && (
+                    <div className="space-y-1">
+                        <div className="grid grid-cols-5 gap-2 text-xs text-gray-400 pb-2 border-b border-gray-700">
+                            <span>Time</span>
+                            <span>Prediction</span>
+                            <span>Target</span>
+                            <span>Result</span>
+                            <span>Prize</span>
+                        </div>
+                        {recentBattles.map((battle, index) => (
+                            <div key={index} className="grid grid-cols-5 gap-2 text-sm py-2">
+                            <span className="text-gray-300">{battle.time}</span>
+                            <span className="text-gray-300">Box {battle.prediction}</span>
+                            <span className="text-gray-300">Box {battle.target}</span>
+                            <span className={battle.result === 'HIT' ? 'text-green-400' : 'text-red-400'}>
+                                {battle.result}
+                            </span>
+                            <span className={battle.prize.startsWith('+') ? 'text-green-400' : 'text-red-400'}>
+                                {battle.prize}
+                            </span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                {isFetching && recentBattles.length === 0 && (
+                    <div className="space-y-4">
+                        <div className="flex items-start justify-between">
+                        <div className="h-4 w-16 bg-white animate-pulse rounded-md" />
+                        <div className="h-4 w-8 bg-white animate-pulse rounded-md" />
+                        </div>
+                        <div className="h-2 w-full bg-white animate-pulse rounded-md" />
+                        <div className="h-2 w-1/4 bg-white animate-pulse rounded-md" />
+                        <div className="space-y-2">
+                        <div className="h-2 w-full bg-white animate-pulse rounded-md" />
+                        <div className="h-2 w-full bg-white animate-pulse rounded-md" />
+                        <div className="h-2 w-full bg-white animate-pulse rounded-md" />
+                        </div>
+                        <div className="flex items-center justify-between">
+                        <div className="h-2 w-8 bg-white animate-pulse rounded-md" />
+                        <div className="h-6 w-10 bg-white animate-pulse rounded-md" />
+                        </div>
+                    </div>
+                )}
             </div>
             </div>
 
