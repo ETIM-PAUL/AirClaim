@@ -1,3 +1,5 @@
+import { format, formatRelative, isToday } from 'date-fns';
+import { enUS } from 'date-fns/locale';
 export const insuredFlightsAgencyAddress = "0x51bdDF6cF2a4D0273EA1caC7c70C8b5Ea7B064a6";
   
   export const shortenAddress = (address: string): string => {
@@ -71,3 +73,14 @@ export const insuredFlightsAgencyAddress = "0x51bdDF6cF2a4D0273EA1caC7c70C8b5Ea7
         "https://randomuser.me/api/portraits/men/45.jpg",
         "https://randomuser.me/api/portraits/women/46.jpg",
       ];
+
+export const formatLocalized = (date: Date, locale = enUS) => {
+  if (isToday(date)) {
+    // Get the localized "Today"
+    const relative = formatRelative(date, new Date(), { locale });
+    const todayWord = relative.split(' ')[0]; // usually "today"
+    return `${todayWord.charAt(0).toUpperCase() + todayWord.slice(1)}, ${format(date, 'HH:mm', { locale })}`;
+  }
+  // fallback for non-today dates
+  return format(date, 'PP, HH:mm', { locale });
+}
