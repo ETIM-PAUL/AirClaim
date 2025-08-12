@@ -79,9 +79,10 @@ contract BattleShip {
         randomNumber %= MAX_DROPS;
         uint16 target = uint16(randomNumber);
         DroneDropResult result;
-        uint256 payout = msg.value<<1;
+        uint256 payout = msg.value;
         if (prediction == target) {
             result = DroneDropResult.Hit;
+            payout = msg.value<<1; // double payout
             if (address(this).balance < payout) {
                 unpaid_wins[msg.sender] += payout;
             } else {
