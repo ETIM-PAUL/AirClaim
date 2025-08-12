@@ -1,25 +1,29 @@
 import {
     prepareAttestationRequestBase,
     submitAttestationRequest,
-    retrieveDataAndProofBase,
+    retrieveDataAndProofBaseWithRetry,
   } from "./fdc";
-import { BrowserProvider } from "ethers";
 import { ethers } from "ethers";
 import { insuredFlightsAgencyAddress } from "~/utils";
 import insuredFlightsAgencyAbi from 'insuredFlightsAgency.json';
 // import IJsonApiVerificationAbi from 'IJsonApiVerification.json';
 import Web3 from 'web3';
 import IWeb2JsonVerification from "../../artifacts/@flarenetwork/flare-periphery-contracts/coston2/IWeb2JsonVerification.sol/IWeb2JsonVerification.json";
+
+import dotenv from 'dotenv';
+
+// Load environment variables at the top
+dotenv.config();
+
 // use ABI
 const abi = IWeb2JsonVerification.abi;
 
 const web3 = new Web3();
 
-const FLIGHT_API_KEY = import.meta.env.VITE_FLIGHT_API_KEY;
-const COSTON2_DA_LAYER_URL = import.meta.env.VITE_COSTON2_DA_LAYER_URL;
-const WEB2JSON_VERIFIER_URL_TESTNET = import.meta.env.WEB2JSON_VERIFIER_URL_TESTNET;
-const VERIFIER_API_KEY_TESTNET = import.meta.env.VERIFIER_API_KEY_TESTNET;
-
+const FLIGHT_API_KEY = process.env.FLIGHT_API_KEY;
+const COSTON2_DA_LAYER_URL = process.env.COSTON2_DA_LAYER_URL;
+const WEB2JSON_VERIFIER_URL_TESTNET = process.env.WEB2JSON_VERIFIER_URL_TESTNET;
+const VERIFIER_API_KEY_TESTNET = process.env.VERIFIER_API_KEY_TESTNET;
   
   export const postprocessJq = `{
       aircraft_name: (.data[0].airline.name // "N/A"),
@@ -31,6 +35,12 @@ const VERIFIER_API_KEY_TESTNET = import.meta.env.VERIFIER_API_KEY_TESTNET;
   flight_delayed_time: (if .data[0].departure.delay == null or .data[0].departure.delay == "" then 0 else (.data[0].departure.delay | tonumber) end),
   flight_status: (.data[0].flight_status // "N/A")
   }`;
+  const httpMethod = "GET";
+// Defaults to "Content-Type": "application/json"
+const headers = "{}";
+const queryParams = "{}";
+const body = "{}";
+
   export const abiSignature = `{
       \"components\": [
           {
@@ -95,12 +105,16 @@ async function prepareAttestationRequest(
   ) {
     const requestBody = {   
         url: apiUrl,
-        postprocessJq: postprocessJq,
-        abi_signature: abiSignature,
+        httpMethod: httpMethod,
+        headers: headers,
+        queryParams: queryParams,
+        body: body,
+        postProcessJq: postprocessJq,
+        abiSignature: abiSignature,
     };
 
     const url = `${verifierUrlBase}Web2Json/prepareRequest`; 
-    const apiKey = VERIFIER_API_KEY_TESTNET!;
+    const apiKey:any = VERIFIER_API_KEY_TESTNET;
 
     const response = await prepareAttestationRequestBase(
         url,
@@ -109,14 +123,6 @@ async function prepareAttestationRequest(
         sourceIdBase,
         requestBody
     );
-
-    // Add validation and logging
-    if (!response || !response.abiEncodedRequest) { 
-        console.error("Invalid response from verifier:", response);
-        throw new Error("Missing abiEncodedRequest in verifier response");
-    }
-
-    console.log("Verifier response:", response);
     return response;
 }       
 
@@ -126,14 +132,13 @@ async function retrieveDataAndProof(
   ) {
     const url = `${COSTON2_DA_LAYER_URL}api/v1/fdc/proof-by-request-round-raw`;
     console.log("Url:", url, "\n");
-    return await retrieveDataAndProofBase(url, abiEncodedRequest, roundId);
+    return await retrieveDataAndProofBaseWithRetry(url, abiEncodedRequest, roundId);
 }
 
 async function addFlight(
     agency: any,
     aircraft_icao: string,
     flight_no: string,
-    passengers: string[],
     proof: any,
     walletProvider: any
 ) {
@@ -154,6 +159,19 @@ async function addFlight(
         merkleProof: proof.proof,
         data: decodedResponse
       };
+
+    const passengers:any = [
+      {
+        wallet:"0x0daAd898fd44B4af14d0d169c1bbA4f13bcD7D26",
+        ticketType: "Economy",
+        ticketPrice: ethers.parseEther("0.1")
+      },
+      {
+        wallet:"0x9C9Dda5D4905E4A5418B04f58F7697Eb27eFA6E1",
+        ticketType: "Business",
+        ticketPrice: ethers.parseEther("0.2")
+      }
+    ]
     
 
     const requiredAmount = await agency.getCostOfInsurance(passengers);
@@ -192,20 +210,26 @@ async function addFlight(
 }
 
 
-export async function insureFlight(aircraft_icao: string, flight_no: string, passengers: any[], walletProvider: any) {
+async function main (aircraft_icao: string, flight_no: string, passengers: any[], walletProvider: any) {
     try {
-        const ethersProvider = new BrowserProvider(walletProvider as any);
-        const signer = await ethersProvider.getSigner();
+        const ethersProvider = new ethers.JsonRpcProvider(process.env.COSTON2_RPC_URL);
+        // const signer = await ethersProvider.getSigner();
+
+        const pk = process.env.PRIVATE_KEY?.trim();
+        if (!pk) throw new Error("Missing PRIVATE_KEY in .env");
+        
+        const signer = new ethers.Wallet(pk, ethersProvider);
         // The Contract object
         const insuredFlightsAgencyContract = new ethers.Contract(insuredFlightsAgencyAddress, insuredFlightsAgencyAbi.abi, signer);
   
         const apiUrl = await prepareUrl(FLIGHT_API_KEY!, flight_no, aircraft_icao);
 
-        const data = await prepareAttestationRequest(apiUrl, postprocessJq, abiSignature);
+        const data:any = await prepareAttestationRequest(apiUrl, postprocessJq, abiSignature);
+        
         const roundId = await submitAttestationRequest(data.abiEncodedRequest);
         const proof = await retrieveDataAndProof(data.abiEncodedRequest, roundId);
         try {
-            await addFlight(insuredFlightsAgencyContract, aircraft_icao, flight_no, passengers, proof, signer);
+            await addFlight(insuredFlightsAgencyContract, aircraft_icao, flight_no, proof, signer);
             return "Flight updated successfully";
         } catch (error) {
             console.log("error", error)
@@ -216,3 +240,7 @@ export async function insureFlight(aircraft_icao: string, flight_no: string, pas
       return error;
     }
 }
+
+main("ZSNB", "6382", [], "ieir").catch((err) => {
+  console.error("Error running insureFlight:", err);
+});

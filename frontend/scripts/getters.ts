@@ -1,5 +1,3 @@
-import hre from "hardhat";
-
 import { ethers } from "ethers";
 import IFlareContractRegistry from "../../artifacts/@flarenetwork/flare-periphery-contracts/coston2/IFlareContractRegistry.sol/IFlareContractRegistry.json";
 import IPriceSubmitter from "../../artifacts/@flarenetwork/flare-periphery-contracts/coston2/IPriceSubmitter.sol/IPriceSubmitter.json";
@@ -39,9 +37,12 @@ import IFdcHub from "../../artifacts/@flarenetwork/flare-periphery-contracts/cos
 import IFdcRequestFeeConfigurations from "../../artifacts/@flarenetwork/flare-periphery-contracts/coston2/IFdcRequestFeeConfigurations.sol/IFdcRequestFeeConfigurations.json";
 import IJsonApiVerification from "../../artifacts/@flarenetwork/flare-periphery-contracts/coston2/IJsonApiVerification.sol/IJsonApiVerification.json";
 import IAssetManagerController from "../../artifacts/@flarenetwork/flare-periphery-contracts/coston2/IAssetManagerController.sol/IAssetManagerController.json";
+import dotenv from 'dotenv';
 
+// Load environment variables at the top
+dotenv.config();
 
-const provider = new ethers.JsonRpcProvider(import.meta.env.VITE_COSTON2_RPC_URL);
+const provider = new ethers.JsonRpcProvider(process.env.COSTON2_RPC_URL);
 const FLARE_CONTRACT_REGISTRY_ADDRESS = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019";
 
 export async function getFlareContractRegistry() {

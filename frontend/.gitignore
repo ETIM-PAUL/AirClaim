@@ -6,3 +6,8 @@
 /build/
 
 note.md
+# vscode
+.vscode
+
+node_modules
+.env
