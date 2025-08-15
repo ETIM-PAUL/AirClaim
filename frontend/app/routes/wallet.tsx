@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { Copy, Wallet, Network, Coins } from "lucide-react";
-import { useAppKit, useAppKitAccount, useAppKitBalance, useDisconnect } from '@reown/appkit/react'; // Replace wagmi with reown
+import { useAppKit, useAppKitAccount, useAppKitBalance, useAppKitState, useDisconnect } from '@reown/appkit/react'; // Replace wagmi with reown
 import Sidebar from '~/components/Sidebar';
 import { useGeneral } from "../context/GeneralContext";
 
@@ -12,8 +12,15 @@ const MyWallet = () => {
   const [balance, setBalance] = useState<any>(0);
   const { isSidebarCollapsed } = useGeneral();
  
+  const { 
+    initialized, 
+    loading, 
+    selectedNetworkId, 
+    activeChain 
+  } = useAppKitState();
 
   const { open} = useAppKit();
+
 
   const handleCopy = () => {
     navigator.clipboard.writeText(address?.toString() ?? "");
@@ -24,19 +31,16 @@ const MyWallet = () => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   }
 
-  const handleTransferClick = () => {
-    console.log("Transfer clicked");
-  }
-
   const disconnectWallet = async () => {
     await disconnect();
   }
 
   const getBalance = async () => {
     const balance = await fetchBalance();
-    console.log(balance, "balance");
+    console.log(balance)
     setBalance(balance);
   }
+  console.log("activeChain", activeChain);
 
   useEffect(() => {
     if (isConnected) {

@@ -1,4 +1,6 @@
-export const insuredFlightsAgencyAddress = "0x3FF08b588187ed212E0dcBD3eF7DAc9786282a24";
+import { format, formatRelative, isToday } from 'date-fns';
+import { enUS } from 'date-fns/locale';
+export const insuredFlightsAgencyAddress = "0xe6226880dC318e9069dCC8521E171Cb2aB7e417F";
   
   export const shortenAddress = (address: string): string => {
       if (!address || address.length < 10) return address; // Handle invalid or short addresses
@@ -71,3 +73,14 @@ export const insuredFlightsAgencyAddress = "0x3FF08b588187ed212E0dcBD3eF7DAc9786
         "https://randomuser.me/api/portraits/men/45.jpg",
         "https://randomuser.me/api/portraits/women/46.jpg",
       ];
+
+export const formatLocalized = (date: Date, locale = enUS) => {
+  if (isToday(date)) {
+    // Get the localized "Today"
+    const relative = formatRelative(date, new Date(), { locale });
+    const todayWord = relative.split(' ')[0]; // usually "today"
+    return `${todayWord.charAt(0).toUpperCase() + todayWord.slice(1)}, ${format(date, 'HH:mm', { locale })}`;
+  }
+  // fallback for non-today dates
+  return format(date, 'PP, HH:mm', { locale });
+}

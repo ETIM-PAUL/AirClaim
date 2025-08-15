@@ -43,7 +43,7 @@ const metadata = {
 
 // 3. Set the networks
 const customNetwork = {
-  id: "0x72", // Replace with your chain ID
+  id: 114, // Replace with your chain ID
   name: "Coston2 Network", // Replace with your network name
   network: "coston2", // Replace with your network identifier
   nativeCurrency: {
@@ -67,9 +67,7 @@ const customNetwork = {
 const networks: any = [customNetwork];
 
 // 4. Create Ethers Adapter
-const ethersAdapter = new EthersAdapter(
-
-);
+const ethersAdapter = new EthersAdapter();
 
 // 5. Create AppKit
 createAppKit({
@@ -97,7 +95,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <GeneralProvider>
-          <WalletProvider>
             {children}
             <ToastContainer
             position="top-right"
@@ -110,7 +107,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
             draggable
             pauseOnHover
             />
-          </WalletProvider>
         </GeneralProvider>
         <ScrollRestoration />
         <Scripts />
