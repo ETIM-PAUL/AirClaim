@@ -38,7 +38,7 @@ const VERIFIER_API_KEY_TESTNET = process.env.VERIFIER_API_KEY_TESTNET;
   const httpMethod = "GET";
 // Defaults to "Content-Type": "application/json"
 const headers = "{}";
-const queryParams = "{}";
+
 const body = "{}";
 
   export const abiSignature = `{
@@ -95,14 +95,24 @@ export const sourceIdBase = "PublicWeb2";
 export const verifierUrlBase = WEB2JSON_VERIFIER_URL_TESTNET;
 
 async function prepareUrl(accessKey: string, flightNo: string, airlineIcao: string) {
-    return `https://api.aviationstack.com/v1/flights?access_key=${accessKey}&flight_number=${flightNo}&airline_icao=${airlineIcao}&limit=1`;
+    return `https://api.aviationstack.com/v1/flights`;
   }
 
 async function prepareAttestationRequest(
     apiUrl: string,
     postprocessJq: string,
-    abiSignature: string
+    abiSignature: string,
+    flightNo: string,
+    airlineIcao: string
   ) {
+    const queryParams = JSON.stringify({
+      access_key: FLIGHT_API_KEY,
+      flight_number: flightNo,
+      airline_icao: airlineIcao,
+      limit: 1,
+      offset: 0
+    });
+
     const requestBody = {   
         url: apiUrl,
         httpMethod: httpMethod,
@@ -150,10 +160,12 @@ async function addFlight(
 
     try {
     // Decode the response
-    const decodedResponse = web3.eth.abi.decodeParameter(
+    const decodedResponse:any = web3.eth.abi.decodeParameter(
         responseType,
         proof.response_hex
     );
+
+    console.log("decodedResponse",decodedResponse)
 
     const proofObject = {
         merkleProof: proof.proof,
@@ -176,6 +188,8 @@ async function addFlight(
 
     const requiredAmount = await agency.getCostOfInsurance(passengers);
 
+    console.log("requiredAmount", requiredAmount)
+
     // Try with a much lower gas limit first to test
     const gasEstimate = await agency.insureFlight.estimateGas(
         aircraft_icao,
@@ -183,26 +197,32 @@ async function addFlight(
         passengers,
         proofObject,
         {
-          value: requiredAmount.toString(),
+          value: requiredAmount,
           from: await walletProvider.getAddress()
         }
       ).catch((e: any) => {
-        console.error("Gas estimation failed:", e.message);
+        console.error("Gas estimation failed:", e);
         return 3000000; // Fallback gas limit
       });
-
+      console.log("gas", gasEstimate)
+      
       // Use 1.5x the estimated gas to be safe
       const gasLimit = Number(gasEstimate) * 1.5;
       console.log("Using gas limit:", gasLimit);
 
-    const tx = await agency.insureFlight(aircraft_icao, flight_no, passengers, proofObject, {
-        value: requiredAmount.toString(),
-        from: await walletProvider.getAddress(),
-        gas: gasLimit
-      });
+    const tx = await agency.insureFlight(
+        aircraft_icao,
+        flight_no,
+        passengers,
+        proofObject,
+        {
+          value: requiredAmount.toString(),
+          gasLimit
+        }
+      );
     await tx.wait();
     console.log("tx", tx)
-    return "Flight insured successfully";
+    console.log("Flight insured successfully");
     } catch (error: any) {
         console.log("error", error)
         return error.reason;
@@ -224,9 +244,9 @@ async function main (aircraft_icao: string, flight_no: string, passengers: any[]
   
         const apiUrl = await prepareUrl(FLIGHT_API_KEY!, flight_no, aircraft_icao);
 
-        const data:any = await prepareAttestationRequest(apiUrl, postprocessJq, abiSignature);
+        const data:any = await prepareAttestationRequest(apiUrl, postprocessJq, abiSignature, flight_no, aircraft_icao);
         
-        const roundId = await submitAttestationRequest(data.abiEncodedRequest);
+        const roundId = await submitAttestationRequest(data.abiEncodedRequest, signer);
         const proof = await retrieveDataAndProof(data.abiEncodedRequest, roundId);
         try {
             await addFlight(insuredFlightsAgencyContract, aircraft_icao, flight_no, proof, signer);
@@ -241,6 +261,6 @@ async function main (aircraft_icao: string, flight_no: string, passengers: any[]
     }
 }
 
-main("ZSNB", "6382", [], "ieir").catch((err) => {
+main("RAM", "9423", [], "ieir").catch((err) => {
   console.error("Error running insureFlight:", err);
 });

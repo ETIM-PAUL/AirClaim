@@ -48,20 +48,21 @@ export async function prepareAttestationRequestBase(
         },
         body: JSON.stringify(request),
     });
+
     if (response.status != 200) {
         throw new Error(`Response status is not OK, status ${response.status} ${response.statusText}\n`);
     }
     console.log("Response status is OK\n");
 
     // Get the response data
-    const responseData = await response.text();
+    const responseData = await response.json();
     console.log("Response data:", responseData);
 
     return responseData;
 }
 
 export async function calculateRoundId(transaction: any) {
-    const blockNumber = transaction.receipt.blockNumber;
+    const blockNumber = transaction.blockNumber;
     const provider = new ethers.JsonRpcProvider(process.env.COSTON2_RPC_URL);
     const block: any = await provider.getBlock(blockNumber);
     const blockTimestamp = BigInt(block.timestamp);
@@ -80,17 +81,20 @@ export async function calculateRoundId(transaction: any) {
     return roundId;
 }
 
-export async function submitAttestationRequest(abiEncodedRequest: string) {
-    const fdcHub = await getFdcHub();
+export async function submitAttestationRequest(abiEncodedRequest: string, signer: ethers.Signer) {
+    const fdcHub:any = (await getFdcHub()).connect(signer);
 
     const requestFee = await getFdcRequestFee(abiEncodedRequest);
 
     const transaction = await fdcHub.requestAttestation(abiEncodedRequest, {
         value: requestFee,
     });
-    console.log("Submitted request:", transaction.tx, "\n");
 
-    const roundId = await calculateRoundId(transaction);
+    const receipt = await transaction.wait();
+    
+    console.log("Submitted request:", receipt, "\n");
+
+    const roundId = await calculateRoundId(receipt);
     
     // Get network name using ethers
     const provider = new ethers.JsonRpcProvider(process.env.COSTON2_RPC_URL);

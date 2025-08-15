@@ -36,6 +36,7 @@ import IFdcVerification from "../../artifacts/@flarenetwork/flare-periphery-cont
 import IFdcHub from "../../artifacts/@flarenetwork/flare-periphery-contracts/coston2/IFdcHub.sol/IFdcHub.json";
 import IFdcRequestFeeConfigurations from "../../artifacts/@flarenetwork/flare-periphery-contracts/coston2/IFdcRequestFeeConfigurations.sol/IFdcRequestFeeConfigurations.json";
 import IJsonApiVerification from "../../artifacts/@flarenetwork/flare-periphery-contracts/coston2/IJsonApiVerification.sol/IJsonApiVerification.json";
+import IWeb2JsonVerification from "../../artifacts/@flarenetwork/flare-periphery-contracts/coston2/IWeb2JsonVerification.sol/IWeb2JsonVerification.json";
 import IAssetManagerController from "../../artifacts/@flarenetwork/flare-periphery-contracts/coston2/IAssetManagerController.sol/IAssetManagerController.json";
 import dotenv from 'dotenv';
 
@@ -229,9 +230,9 @@ export async function getFdcRequestFeeConfigurations() {
     return new ethers.Contract(address, IFdcRequestFeeConfigurations.abi, provider);
 }
 
-export async function getJsonApiVerification() {
-     const address: string = await getContractAddressByName("JsonApiVerification");
-    return new ethers.Contract(address, IJsonApiVerification.abi, provider);
+export async function getWeb2JsonVerification() {
+     const address: string = await getContractAddressByName("Web2JsonVerification");
+    return new ethers.Contract(address, IWeb2JsonVerification.abi, provider);
 }
 
 export async function getAssetManagerController() {
