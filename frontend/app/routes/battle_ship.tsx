@@ -69,12 +69,12 @@ const ZombieBattleship = () => {
     }
     
     try {
-        const provider = new ethers.JsonRpcProvider(import.meta.env.VITE_COSTON2_RPC_URL);
+        const provider = new ethers.BrowserProvider(walletProvider as any);
         const BattleShip: BattleShipInstance = new Contract(BATTLE_SHIP_ADDRESS, BATTLE_SHIP_ABI, provider)
         setIsFetching(true)
         const result = await BattleShip.getUserDroneBattles(address)
+        console.log("battles", result)
         const wrappedResult = deepUnwrap(result)
-        // console.log("battles", wrappedResult)
         const recentBattles = wrappedResult.map(transformBattleData)
         // console.log("user recent battles", recentBattles)
         setRecentBattles(recentBattles)

@@ -40,7 +40,7 @@ const MyWallet = () => {
     console.log(balance)
     setBalance(balance);
   }
-  console.log("activeChain", activeChain);
+  console.log("activeChain", selectedNetworkId);
 
   useEffect(() => {
     if (isConnected) {
@@ -85,7 +85,7 @@ const MyWallet = () => {
                           <h2 className="text-sm font-semibold text-gray-600 flex items-center gap-2">
                             <Network className="w-4 h-4 text-indigo-500" /> Network
                           </h2>
-                          <div className="text-md font-medium">Ethereum</div> {/* Replace with dynamic network if needed */}
+                          <div className="text-md font-medium">Coston2</div> {/* Replace with dynamic network if needed */}
                           <button 
                             onClick={disconnectWallet}
                             className="text-sm text-red-500 hover:underline mt-2"
