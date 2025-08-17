@@ -1,6 +1,6 @@
 import { format, formatRelative, isToday } from 'date-fns';
 import { enUS } from 'date-fns/locale';
-export const insuredFlightsAgencyAddress = "0xe6226880dC318e9069dCC8521E171Cb2aB7e417F";
+export const insuredFlightsAgencyAddress = "0x4De616A56362f3C5a043345fa3dEe0384D8b35B8";
   
   export const shortenAddress = (address: string): string => {
       if (!address || address.length < 10) return address; // Handle invalid or short addresses
@@ -31,32 +31,94 @@ export const insuredFlightsAgencyAddress = "0xe6226880dC318e9069dCC8521E171Cb2aB
         },
     };
 
-    export const barData = [
-        { name: "Jan", British: 200, Delta: 150, United: 120, Emirates: 90, Others: 50 },
-        { name: "Feb", British: 250, Delta: 200, United: 160, Emirates: 120, Others: 80 },
-        { name: "Mar", British: 300, Delta: 250, United: 200, Emirates: 180, Others: 100 },
-        { name: "Apr", British: 320, Delta: 280, United: 230, Emirates: 200, Others: 130 },
-        { name: "May", British: 360, Delta: 310, United: 260, Emirates: 230, Others: 150 },
-        { name: "Jun", British: 400, Delta: 340, United: 300, Emirates: 260, Others: 180 },
-      ];
+    export function transformFlightData(flights:any) {
+      const groupedByMonth:any = {};
+      
+      flights.forEach((flight:any) => {
+        const date = new Date(flight.flightDate);
+        const monthYear = date.toLocaleDateString('en-US', { 
+          month: 'short', 
+          year: 'numeric' 
+        });
+        
+        if (!groupedByMonth[monthYear]) {
+          groupedByMonth[monthYear] = {};
+        }
+        
+        const airline = flight.airline;
+        if (!groupedByMonth[monthYear][airline]) {
+          groupedByMonth[monthYear][airline] = 0;
+        }
+        
+        // Count number of insured flights
+        groupedByMonth[monthYear][airline] += 1;
+      });
+      
+      return Object.keys(groupedByMonth).map(month => {
+        const monthData:any = { name: month };
+        
+        Object.keys(groupedByMonth[month]).forEach(airline => {
+          monthData[airline] = groupedByMonth[month][airline];
+        });
+        
+        return monthData;
+      });
+    }
+
+    export const transformToAirlineTotals = (flights:any) => {
+      const airlineTotals:any = {};
+      
+      flights.forEach((flight:any) => {
+        const airline = flight.airline;
+        if (!airlineTotals[airline]) {
+          airlineTotals[airline] = 0;
+        }
+        
+        // Sum insured amounts for each airline
+        airlineTotals[airline] += parseFloat(flight.insuredAmount);
+      });
+      
+      // Convert to desired format: [{ name: "Airline", value: total }]
+      return Object.keys(airlineTotals).map(airline => ({
+        name: airline,
+        value: Math.round(airlineTotals[airline] * 100) / 100 // Round to 2 decimal places
+      }));
+    };
+
+    export const transformToMonthlyTotalsETH = (flights:any) => {
+      const monthlyTotals:any = {};
+      
+      flights.forEach((flight:any) => {
+        const date = new Date(flight.flightDate);
+        const monthName = date.toLocaleDateString('en-US', { month: 'short' });
+        
+        if (!monthlyTotals[monthName]) {
+          monthlyTotals[monthName] = {
+            insured: 0,
+            passengers: 0
+          };
+        }
+        
+        // Keep actual ETH values
+        const insuredAmount = parseFloat(flight.insuredAmount);
+        const passengerCount = parseInt(flight.passengers);
+        
+        monthlyTotals[monthName].insured += insuredAmount;
+        monthlyTotals[monthName].passengers += passengerCount;
+      });
+      
+      return Object.keys(monthlyTotals).map(month => ({
+        name: month,
+        insured: Math.round(monthlyTotals[month].insured * 100) / 100, // Round to 2 decimal places
+        passengers: monthlyTotals[month].passengers
+      }));
+    };
     
-      export const pieData = [
-        { name: "Flight Cancellation", value: 400 },
-        { name: "Baggage Loss", value: 300 },
-        { name: "Flight Delay", value: 300 },
-        { name: "Medical Emergency", value: 200 },
-        { name: "Other", value: 100 },
-      ];
     
-      export const COLORS = ["#34D399", "#10B981", "#06B6D4", "#F59E0B", "#EF4444"];
+    export const COLORS = ["#34D399", "#EF4444", "#10B981", "#06B6D4", "#F59E0B", "#EF4444"];
     
-      export const lineData = [
-        { name: "Jan", insured: 200000, claimed: 40000 },
-        { name: "Feb", insured: 300000, claimed: 50000 },
-        { name: "Mar", insured: 400000, claimed: 60000 },
-        { name: "Apr", insured: 500000, claimed: 70000 },
-        { name: "May", insured: 600000, claimed: 80000 },
-        { name: "Jun", insured: 700000, claimed: 85000 },
+    export const lineData = [
+        { name: "Jan", insured: 200000, passengers: 40000 },
       ];
     
       export const flights = [
@@ -83,4 +145,25 @@ export const formatLocalized = (date: Date, locale = enUS) => {
   }
   // fallback for non-today dates
   return format(date, 'PP, HH:mm', { locale });
+}
+
+export function timeAgo(timestamp:string) {
+  const now = Date.now();
+  const diffInSeconds = Math.floor((now - Number(timestamp) * 1000) / 1000);
+  
+  if (diffInSeconds < 0) {
+    // Future timestamp
+    const future = Math.abs(diffInSeconds);
+    if (future < 60) return `in ${future} seconds`;
+    if (future < 3600) return `in ${Math.floor(future / 60)} minutes`;
+    if (future < 86400) return `in ${Math.floor(future / 3600)} hours`;
+    return `in ${Math.floor(future / 86400)} days`;
+  }
+  
+  // Past timestamp
+  if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`;
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+  if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+  return `${Math.floor(diffInSeconds / 2592000)} months ago`;
 }

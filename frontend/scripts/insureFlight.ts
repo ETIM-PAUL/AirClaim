@@ -10,21 +10,18 @@ import insuredFlightsAgencyAbi from 'insuredFlightsAgency.json';
 import Web3 from 'web3';
 import IWeb2JsonVerification from "../../artifacts/@flarenetwork/flare-periphery-contracts/coston2/IWeb2JsonVerification.sol/IWeb2JsonVerification.json";
 
-import dotenv from 'dotenv';
-
-// Load environment variables at the top
-dotenv.config();
 
 // use ABI
 const abi = IWeb2JsonVerification.abi;
 
 const web3 = new Web3();
 
-const FLIGHT_API_KEY = process.env.FLIGHT_API_KEY;
-const COSTON2_DA_LAYER_URL = process.env.COSTON2_DA_LAYER_URL;
-const WEB2JSON_VERIFIER_URL_TESTNET = process.env.WEB2JSON_VERIFIER_URL_TESTNET;
-const VERIFIER_API_KEY_TESTNET = process.env.VERIFIER_API_KEY_TESTNET;
+const FLIGHT_API_KEY = import.meta.env.VITE_FLIGHT_API_KEY;
+const COSTON2_DA_LAYER_URL = import.meta.env.VITE_COSTON2_DA_LAYER_URL;
+const WEB2JSON_VERIFIER_URL_TESTNET = import.meta.env.VITE_WEB2JSON_VERIFIER_URL_TESTNET;
+const VERIFIER_API_KEY_TESTNET = import.meta.env.VITE_VERIFIER_API_KEY_TESTNET;
   
+console.log("WEB2JSON_VERIFIER_URL_TESTNET",WEB2JSON_VERIFIER_URL_TESTNET)
   export const postprocessJq = `{
       aircraft_name: (.data[0].airline.name // "N/A"),
       aircraft_reg: (.data[0].aircraft.registration // "N/A"),
@@ -149,8 +146,9 @@ async function addFlight(
     agency: any,
     aircraft_icao: string,
     flight_no: string,
+    passengers:any,
     proof: any,
-    walletProvider: any
+    signer: any
 ) {
     // const responseType: any = IJsonApiVerificationAbi.abi[0].inputs[0].components[1];
 
@@ -165,50 +163,14 @@ async function addFlight(
         proof.response_hex
     );
 
-    console.log("decodedResponse",decodedResponse)
-
     const proofObject = {
         merkleProof: proof.proof,
         data: decodedResponse
       };
-
-    const passengers:any = [
-      {
-        wallet:"0x0daAd898fd44B4af14d0d169c1bbA4f13bcD7D26",
-        ticketType: "Economy",
-        ticketPrice: ethers.parseEther("0.1")
-      },
-      {
-        wallet:"0x9C9Dda5D4905E4A5418B04f58F7697Eb27eFA6E1",
-        ticketType: "Business",
-        ticketPrice: ethers.parseEther("0.2")
-      }
-    ]
     
 
     const requiredAmount = await agency.getCostOfInsurance(passengers);
 
-    console.log("requiredAmount", requiredAmount)
-
-    // Try with a much lower gas limit first to test
-    const gasEstimate = await agency.insureFlight.estimateGas(
-        aircraft_icao,
-        flight_no,
-        passengers,
-        proofObject,
-        {
-          value: requiredAmount,
-          from: await walletProvider.getAddress()
-        }
-      ).catch((e: any) => {
-        console.error("Gas estimation failed:", e);
-        return 3000000; // Fallback gas limit
-      });
-      console.log("gas", gasEstimate)
-      
-      // Use 1.5x the estimated gas to be safe
-      const gasLimit = Number(gasEstimate) * 1.5;
-      console.log("Using gas limit:", gasLimit);
 
     const tx = await agency.insureFlight(
         aircraft_icao,
@@ -216,13 +178,11 @@ async function addFlight(
         passengers,
         proofObject,
         {
-          value: requiredAmount.toString(),
-          gasLimit
+          value: requiredAmount,
         }
       );
     await tx.wait();
-    console.log("tx", tx)
-    console.log("Flight insured successfully");
+    return tx;
     } catch (error: any) {
         console.log("error", error)
         return error.reason;
@@ -230,15 +190,18 @@ async function addFlight(
 }
 
 
-async function main (aircraft_icao: string, flight_no: string, passengers: any[], walletProvider: any) {
+export async function insureFlightAction (aircraft_icao: string, flight_no: string, passengers: any[], walletProvider: any) {
     try {
-        const ethersProvider = new ethers.JsonRpcProvider(process.env.COSTON2_RPC_URL);
-        // const signer = await ethersProvider.getSigner();
+        // const ethersProvider = new ethers.BrowserProvider(window?.ethereum as any);
+        // // const signer = await ethersProvider.getSigner();
 
-        const pk = process.env.PRIVATE_KEY?.trim();
-        if (!pk) throw new Error("Missing PRIVATE_KEY in .env");
+        // const pk = process.env.PRIVATE_KEY?.trim();
+        // if (!pk) throw new Error("Missing PRIVATE_KEY in .env");
         
-        const signer = new ethers.Wallet(pk, ethersProvider);
+        // const signer = new ethers.Wallet(pk, ethersProvider);
+
+        const ethersProvider = new ethers.BrowserProvider(walletProvider as any);
+        const signer = await ethersProvider.getSigner();
         // The Contract object
         const insuredFlightsAgencyContract = new ethers.Contract(insuredFlightsAgencyAddress, insuredFlightsAgencyAbi.abi, signer);
   
@@ -249,8 +212,8 @@ async function main (aircraft_icao: string, flight_no: string, passengers: any[]
         const roundId = await submitAttestationRequest(data.abiEncodedRequest, signer);
         const proof = await retrieveDataAndProof(data.abiEncodedRequest, roundId);
         try {
-            await addFlight(insuredFlightsAgencyContract, aircraft_icao, flight_no, proof, signer);
-            return "Flight updated successfully";
+            const result = await addFlight(insuredFlightsAgencyContract, aircraft_icao, flight_no, passengers, proof, signer);
+            return result;
         } catch (error) {
             console.log("error", error)
             return error;
@@ -260,7 +223,3 @@ async function main (aircraft_icao: string, flight_no: string, passengers: any[]
       return error;
     }
 }
-
-main("RAM", "9423", [], "ieir").catch((err) => {
-  console.error("Error running insureFlight:", err);
-});

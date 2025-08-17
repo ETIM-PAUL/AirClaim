@@ -1,69 +1,194 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { FaPlane, FaUserFriends, FaDollarSign, FaChartLine, FaExclamationCircle, FaCheckCircle, FaCalendarAlt, FaMapMarkerAlt, FaTicketAlt, FaInfoCircle, FaGamepad, FaClock, FaFantasyFlightGames, FaHandSparkles } from "react-icons/fa";
 import {Check, X, Clock, ArrowRight } from "lucide-react";
 import Sidebar from "~/components/Sidebar";
 import { TbNumber10, TbNumbers } from 'react-icons/tb';
 import { GiPodiumWinner } from "react-icons/gi";
 import { RiCreativeCommonsZeroFill } from "react-icons/ri";
+import { useGeneral } from '~/context/GeneralContext';
+import { useParams } from 'react-router';
+import { insuredFlightsAgencyAddress, shortenAddress } from '~/utils';
+import { ethers } from 'ethers';
+import insuredFlightsAgencyAbi from 'insuredFlightsAgency.json';
+import { toast } from 'react-toastify';
+import Outcome from '~/components/Outcome';
 
 const FlightDetailsPage = () => {
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
   const [participateInPrediction, setParticipateInPrediction] = useState(false);
-  const [prediction, setPrediction] = useState("");
+  const [prediction, setPrediction] = useState(0);
+  const [processing, setProcessing] = useState(false);
 
-  const [flight, setFlight] = useState<any>({
-    id: "1",
-    flightNumber: "UA-482",
-    airline: "United Airlines",
-    airlineICAO: "UAL",
-    airlineImage: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/United_Airlines_logo_2010.svg/1200px-United_Airlines_logo_2010.svg.png",
-    aircraftName: "Boeing 737-800",
-    flightDate: "2023-10-15",
-    departureAirport: "JFK",
-    arrivalAirport: "LAX",
-    flightStatus: "Delayed",
-    insurer: "AirClaim Insurance",
-    passengers: 2,
-    passengersList: [
-      {
-        name: "John Doe",
-        walletAddress: "0x1234567890123456789012345678901234567890",
-        ticketType: "Economy",
-        ticketPrice: "600",
-        insuredAmount: "280",
-        claimed: "Yes",
-        predictionInclusive: "Yes",
-        won: "No",
-      },
-      {
-        name: "Jane Doe",
-        walletAddress: "0x1234567890123456789012345678901234567890",
-        ticketType: "Economy",
-        ticketPrice: "600",
-        insuredAmount: "280",
-        claimed: "Yes",
-        predictionInclusive: "No",
-        won: "n/a",
-      },
-    ],
-    insuredAmount: "560",
-    claimedFLR: "280",
-    predictionFLRWon: "100"
-  });
+  // Modal state
+  const [open, setOpen] = useState(false);
+  const [modalMode, setModalMode] = useState("info"); // 'win' | 'lose' | 'half' | 'info'
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
 
+  const { isSidebarCollapsed, loadingFlights, allFlights, allClaims  } = useGeneral();
+  const params:any = useParams();
+
+  const iface:any = useMemo(() => new ethers.Interface(insuredFlightsAgencyAbi.abi), [insuredFlightsAgencyAbi.abi]);
+  // const [flight, setFlight] = useState<any>({
+  //   id: "1",
+  //   flightNumber: "UA-482",
+  //   airline: "United Airlines",
+  //   airlineICAO: "UAL",
+  //   airlineImage: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/United_Airlines_logo_2010.svg/1200px-United_Airlines_logo_2010.svg.png",
+  //   aircraftName: "Boeing 737-800",
+  //   flightDate: "2023-10-15",
+  //   departureAirport: "JFK",
+  //   arrivalAirport: "LAX",
+  //   flightStatus: "Delayed",
+  //   insurer: "AirClaim Insurance",
+  //   passengers: 2,
+  //   passengersList: [
+  //     {
+  //       name: "John Doe",
+  //       walletAddress: "0x1234567890123456789012345678901234567890",
+  //       ticketType: "Economy",
+  //       ticketPrice: "600",
+  //       insuredAmount: "280",
+  //       claimed: "Yes",
+  //       predictionInclusive: "Yes",
+  //       won: "No",
+  //     },
+  //     {
+  //       name: "Jane Doe",
+  //       walletAddress: "0x1234567890123456789012345678901234567890",
+  //       ticketType: "Economy",
+  //       ticketPrice: "600",
+  //       insuredAmount: "280",
+  //       claimed: "Yes",
+  //       predictionInclusive: "No",
+  //       won: "n/a",
+  //     },
+  //   ],
+  //   insuredAmount: "560",
+  //   claimedFLR: "280",
+  //   predictionFLRWon: "100"
+  // });
+
+  const flight = allFlights.find((flight:any) => flight.id === Number(params?.id))
   const handleCheckFlightStatus = () => {
     setIsClaimModalOpen(true);
   };
 
-  const handleProceed = () => {
-    // Logic to proceed with the claim
-    console.log("Proceeding with claim...");
-    setIsClaimModalOpen(false);
+
+  const handleClaim = async () => {
+    try {
+      setProcessing(true);
+      const provider = new ethers.BrowserProvider(window.ethereum as any);
+      const signer = await provider.getSigner();
+      const caller = await signer.getAddress();
+      const contract = new ethers.Contract(insuredFlightsAgencyAddress, insuredFlightsAgencyAbi?.abi, signer);
+
+      // Send tx and wait for receipt
+      const tx = await contract.claimInsurance(Number(params?.id), flight?.flightNumber, Number(prediction));
+      const toastL = toast.loading("Submitting claim…");
+      const receipt = await tx.wait();
+      toast.dismiss(toastL)
+      toast.success("Transaction confirmed");
+
+      // If user passed 0 → show the simple modal regardless of event
+      if (Number(prediction) === 0) {
+        setIsClaimModalOpen(false);
+        setModalMode("half");
+        setModalTitle("Claim submitted");
+        setModalMessage("Your insurance claim has been made. You'll receive 100% of the insurance, per contract rules for not participating in prediction.");
+        setOpen(true);
+        return;
+      }
+
+      // Parse FlightClaimed event from the receipt
+      let foundEvent = null;
+      for (const log of receipt.logs) {
+        try {
+          const parsed = iface.parseLog(log);
+          if (parsed?.name === "FlightClaimed") {
+            const [evInsuredFlightId, passenger, secretNumber] = parsed.args;
+            if (passenger.toLowerCase() === caller.toLowerCase() && evInsuredFlightId.toString() === String(params?.id)) {
+              foundEvent = { passenger, secretNumber: Number(secretNumber) };
+              break;
+            }
+          }
+        } catch (_) {
+          // Not our event
+        }
+      }
+console.log("FoundEvent",foundEvent)
+      // If not found in receipt (rare), try fetching logs for that block
+      if (!foundEvent) {
+        try {
+          const filter = {
+            address: insuredFlightsAgencyAddress,
+            fromBlock: receipt.blockNumber,
+            toBlock: receipt.blockNumber,
+            topics: [iface.getEvent("FlightClaimed").topicHash, ethers.zeroPadValue(ethers.toBeHex(params?.id), 32), ethers.zeroPadValue(caller, 32)],
+          };
+          const logs = await provider.getLogs(filter);
+          if (logs?.[0]) {
+            const parsed = iface.parseLog(logs[0]);
+            const [, passenger, secretNumber] = parsed.args;
+            foundEvent = { passenger, secretNumber: Number(secretNumber) };
+          }
+        } catch (e) {
+          // Ignore; we'll handle as unknown
+        }
+      }
+
+      if (!foundEvent) {
+        // Fallback: unknown outcome but tx succeeded
+        setIsClaimModalOpen(false);
+        setModalMode("info");
+        setModalTitle("Claim submitted");
+        setModalMessage("Your claim transaction succeeded. However, we couldn't read the event. Please check your balance or activity.");
+        setOpen(true);
+        return;
+      }
+
+      // Compare with user's prediction (non-zero path)
+      if (Number(foundEvent.secretNumber) === Number(prediction)) {
+        setIsClaimModalOpen(false);
+        setModalMode("win");
+        setModalTitle("🎉 You won the prediction game!");
+        setModalMessage("You get the full insurance payout, plus 2 FLR tokens.");
+      } else {
+        setIsClaimModalOpen(false);
+        setModalMode("lose");
+        setModalTitle(`😔 Better luck next time. The Secret Number was ${foundEvent.secretNumber})`);
+        setModalMessage("You lost the prediction game and received 50% of your insurance claim.");
+      }
+      setOpen(true);
+    } catch (err) {
+      // Try to toast any revert reason
+      const reason = extractRevertReason(err);
+      toast.error(reason || "Transaction failed");
+      console.error(err);
+    } finally {
+      setProcessing(false);
+    }
   };
+
+  function extractRevertReason(err:any) {
+    try {
+      if (!err) return null;
+      // Ethers v6 errors
+      if (err.shortMessage) return err.shortMessage;
+      if (err.info?.error?.message) return err.info.error.message;
+      if (err.error?.message) return err.error.message;
+      if (err.reason) return err.reason;
+      if (err.message) return err.message;
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
 
   const handleCancel = () => {
     setIsClaimModalOpen(false);
   };
+
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-950">
@@ -79,25 +204,27 @@ const FlightDetailsPage = () => {
         </div>
         <hr className="border-gray-800 mb-8" />
 
+        {loadingFlights && <p>Loading flight insurance details...</p>}
+        {!loadingFlights && !flight?.id && <p>No flight found</p>}
+
         {/* Flight Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
           <div className="bg-[#101112] rounded-2xl p-6 shadow-xl">
             <h2 className="text-xl font-bold mb-4">Flight Information</h2>
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <img src="https://randomuser.me/api/portraits/men/32.jpg" className="w-12 h-12 rounded-full border-2 border-green-400 shadow-lg" alt={flight.airline} />
-                <div>
-                  <p className="text-gray-400">Airline</p>
-                  <p className="font-semibold">{flight.airline} ({flight.airlineICAO})</p>
+              <div className="w-10 h-10 rounded-full bg-gray-300 flex justify-center items-center">
+                  <span className="font-bold">{flight.aircraftIcao}</span>
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3">
                 <FaPlane className="text-green-400 text-xl" />
                 <div>
                   <p className="text-gray-400">Aircraft</p>
-                  <p className="font-semibold">{flight.aircraftName}</p>
+                  <p className="font-semibold">{flight.airline} ({flight.airlineICAO})</p>
                 </div>
               </div>
+              </div>
+
               <div className="flex items-center gap-3">
                 <FaCalendarAlt className="text-green-400 text-xl" />
                 <div>
@@ -116,7 +243,7 @@ const FlightDetailsPage = () => {
                 <FaInfoCircle className="text-green-400 text-xl" />
                 <div>
                   <p className="text-gray-400">Flight Status</p>
-                  <p className={`font-semibold ${flight.flightStatus === "Delayed" ? "text-yellow-400" : flight.flightStatus === "Cancelled" ? "text-red-400" : "text-green-400"}`}>{flight.flightStatus}</p>
+                  <p className={`font-semibold ${Number(flight.flightDelayedTime) >= 30 ? "text-yellow-400" : flight.flightStatus === "cancelled" ? "text-red-400" : "text-green-400"}`}>{Number(flight.flightDelayedTime) >= 30 ? "delayed" : flight?.flightStatus}</p>
                 </div>
               </div>
 
@@ -128,7 +255,7 @@ const FlightDetailsPage = () => {
                 </div>
               </div>
               
-              {flight.flightStatus === "Delayed" && (
+              {Number(flight.flightDelayedTime) >= 30 && (
               <button
                 onClick={handleCheckFlightStatus}
                 className="mt-4 w-full bg-gradient-to-r from-green-400 to-emerald-500 py-2 rounded-lg text-white text-sm font-semibold shadow hover:from-emerald-600 hover:to-emerald-700 transition-all transform hover:scale-105 cursor-pointer"
@@ -147,14 +274,14 @@ const FlightDetailsPage = () => {
                 <FaExclamationCircle className="text-red-400 text-xl" />
                 <div>
                   <p className="text-gray-400">Claim Status</p>
-                  <p className={`font-semibold ${flight.flightStatus === "Delayed" ? "text-red-400" : "text-green-400"}`}>{flight.flightStatus === "Delayed" ? "Activated" : "Not Claimed"}</p>
+                  <p className={`font-semibold ${flight.flightStatus === "delayed" ? "text-red-400" : "text-green-400"}`}>{flight.flightStatus === "delayed" ? "active" : "Not Claimed"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <FaCheckCircle className="text-green-400 text-xl" />
                 <div>
                   <p className="text-gray-400">Claimed FLR Tokens</p>
-                  <p className="font-semibold">{flight.claimedFLR} FLR</p>
+                  <p className="font-semibold">{flight?.claimedFLR ?? 0} FLR</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -168,14 +295,14 @@ const FlightDetailsPage = () => {
                 <FaGamepad className="text-green-400 text-xl" />
                 <div>
                   <p className="text-gray-400">Prediction FLR Won</p>
-                  <p className="font-semibold">{flight.predictionFLRWon} FLR</p>
+                  <p className="font-semibold">{flight?.predictionFLRWon ?? 0} FLR</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <FaUserFriends className="text-green-400 text-xl" />
                 <div>
                   <p className="text-gray-400">Insurer</p>
-                  <p className="font-semibold">{flight.insurer}</p>
+                  <p className="font-semibold">{shortenAddress(flight.insurer)}</p>
                 </div>
               </div>
             </div>
@@ -183,7 +310,7 @@ const FlightDetailsPage = () => {
         </div>
 
         {/* Passengers List */}
-        <div className="bg-[#101112] rounded-2xl p-6 shadow-xl">
+        {/* <div className="bg-[#101112] rounded-2xl p-6 shadow-xl">
           <h2 className="text-xl font-bold mb-4">Passengers</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -215,7 +342,7 @@ const FlightDetailsPage = () => {
               </tbody>
             </table>
           </div>
-        </div>
+        </div> */}
       </main>
 
       {/* Claim Insurance Modal */}
@@ -267,7 +394,7 @@ const FlightDetailsPage = () => {
                       <input
                         type="number"
                         value={prediction}
-                        onChange={(e) => setPrediction(e.target.value)}
+                        onChange={(e:any) => setPrediction(e.target.value)}
                         className="w-full text-black p-3 pl-10 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 bg-white shadow-sm"
                         placeholder="Enter your prediction"
                       />
@@ -286,10 +413,10 @@ const FlightDetailsPage = () => {
                     Cancel
                   </button>
                   <button
-                    onClick={handleProceed}
+                    onClick={handleClaim}
                     className="flex items-center justify-center gap-2 px-2 cursor-pointer py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
                   >
-                    Proceed
+                    {processing ? "Processing" : "Proceed"}
                     <ArrowRight className="w-5 h-5" />
                   </button>
                 </div>
@@ -330,6 +457,8 @@ const FlightDetailsPage = () => {
           </div>
         </div>
       )}
+
+    <Outcome open={open} setOpen={setOpen} mode={modalMode} title={modalTitle} message={modalMessage} />
     </div>
   );
 };

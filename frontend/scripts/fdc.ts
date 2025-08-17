@@ -9,14 +9,9 @@ import {
 import { ethers } from "ethers";
 import IFdcRequestFeeConfigurations from "../../artifacts/@flarenetwork/flare-periphery-contracts/coston2/IFdcRequestFeeConfigurations.sol/IFdcRequestFeeConfigurations.json";
 
-import dotenv from 'dotenv';
-
-// Load environment variables at the top
-dotenv.config();
-
 export async function getFdcRequestFee(abiEncodedRequest: string) {
   const address = await getContractAddressByName("FdcRequestFeeConfigurations");
-  const provider = new ethers.JsonRpcProvider(process.env.COSTON2_RPC_URL);
+  const provider = new ethers.JsonRpcProvider(import.meta.env.VITE_COSTON2_RPC_URL);
   const fdcRequestFeeConfigurations = new ethers.Contract(address, IFdcRequestFeeConfigurations.abi, provider);
   return await fdcRequestFeeConfigurations.getRequestFee(abiEncodedRequest);
 }
@@ -63,7 +58,7 @@ export async function prepareAttestationRequestBase(
 
 export async function calculateRoundId(transaction: any) {
     const blockNumber = transaction.blockNumber;
-    const provider = new ethers.JsonRpcProvider(process.env.COSTON2_RPC_URL);
+    const provider = new ethers.JsonRpcProvider(import.meta.env.VITE_COSTON2_RPC_URL);
     const block: any = await provider.getBlock(blockNumber);
     const blockTimestamp = BigInt(block.timestamp);
 
@@ -97,7 +92,7 @@ export async function submitAttestationRequest(abiEncodedRequest: string, signer
     const roundId = await calculateRoundId(receipt);
     
     // Get network name using ethers
-    const provider = new ethers.JsonRpcProvider(process.env.COSTON2_RPC_URL);
+    const provider = new ethers.JsonRpcProvider(import.meta.env.VITE_COSTON2_RPC_URL);
     const network = await provider.getNetwork();
     const networkName = network.name;
     

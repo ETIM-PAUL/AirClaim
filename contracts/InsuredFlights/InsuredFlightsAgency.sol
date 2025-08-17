@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
 import {IWeb2Json} from "@flarenetwork/flare-periphery-contracts/coston2/IWeb2Json.sol";
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {RandomNumberV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/RandomNumberV2Interface.sol";
 
 struct Passenger {
@@ -27,7 +27,7 @@ struct InsuredFlight {
     uint256 insuranceId;
 }
 
-struct AllClaims {
+struct InsuranceClaim {
     uint256 amountClaimed;
     uint dateClaimed;
     address insuree;
@@ -52,7 +52,7 @@ contract insuredFlightsAgency {
     uint256 public insurance_delay_time;
     mapping(uint256 => InsuredFlight) public _insuredFlight;
     mapping(uint256 => uint256) public _insuredFlightPrice;
-    mapping(uint256 => AllClaims) public _insuranceClaims;
+    mapping(uint256 => InsuranceClaim) public _insuranceClaims;
     mapping(uint256 => Passenger[]) public _insuranceFlightPassengers;
     mapping(uint256 => mapping(address => bool)) public insuredFlightPassengersStatus;
 
@@ -75,8 +75,6 @@ contract insuredFlightsAgency {
     constructor(uint256 _insurancePrice) {
         INSURANCE_PRICE = _insurancePrice;
         insurance_delay_time = 30;
-        insuredFlightIds = 1;
-        insuranceClaimsIds = 1;
         owner = msg.sender;
         _generator = ContractRegistry.getRandomNumberV2();
         _setNewSecretNumber();
@@ -120,9 +118,10 @@ contract insuredFlightsAgency {
 
         DataTransportObject memory dto = abi.decode(data.data.responseBody.abiEncodedData, (DataTransportObject));
         require(
-            keccak256(abi.encodePacked(dto.flight_status)) == keccak256(abi.encodePacked("scheduled")), 
-            "Flight No doesn't match a scheduled flight"
+            keccak256(bytes(dto.flight_status)) == keccak256(bytes("scheduled")),
+            "Flight not scheduled"
         );
+
         
         _storeFlightData(aircraft_icao, flight_no, dto, passengers);
     }
@@ -133,6 +132,7 @@ contract insuredFlightsAgency {
         DataTransportObject memory dto,
         Passenger[] memory passengers
     ) private {
+        insuredFlightIds++;
         uint256 currentId = insuredFlightIds;
         uint256 total = 0;
         
@@ -141,7 +141,7 @@ contract insuredFlightsAgency {
         _insuredFlight[currentId].flightDate = dto.flight_date;
         _insuredFlight[currentId].departureAirport = dto.departure_airport;
         _insuredFlight[currentId].arrivalAirport = dto.arrival_airport;
-        _insuredFlight[currentId].flightDelayedTime = dto.flight_delayed_time;
+        _insuredFlight[currentId].flightDelayedTime = uint256(dto.flight_delayed_time);
         _insuredFlight[currentId].flightNo = flight_no;
         _insuredFlight[currentId].passengers = passengers.length;
         _insuredFlight[currentId].status = dto.flight_status;
@@ -158,7 +158,6 @@ contract insuredFlightsAgency {
         }
         
         _insuredFlightPrice[currentId] = total;
-        insuredFlightIds++;
         
         emit FlightInsured(currentId);
     }
@@ -193,6 +192,7 @@ contract insuredFlightsAgency {
 
     function _processClaim(uint insuredFlightId, uint256 predictedNumber) private returns (uint256, bool) {
         insuredFlightPassengersStatus[insuredFlightId][msg.sender] = false;
+        insuranceClaimsIds++;
         
         uint256 currentSecret = _secretNumber;
         uint256 baseAmount = (_insuredFlightPrice[insuredFlightId] * 10) / 100;
@@ -211,7 +211,6 @@ contract insuredFlightsAgency {
         _insuranceClaims[insuranceClaimsIds].dateClaimed = block.timestamp;
         _insuranceClaims[insuranceClaimsIds].insuree = msg.sender;
         _insuranceClaims[insuranceClaimsIds].insuranceId = insuredFlightId;
-        insuranceClaimsIds++;
 
         _setNewSecretNumber();
         emit FlightClaimed(insuredFlightId, msg.sender, currentSecret);
@@ -219,22 +218,83 @@ contract insuredFlightsAgency {
         return (currentSecret, predictionSuccess);
     }
 
-    function getAllInsureFlights() public view returns (InsuredFlight[] memory) {
-        InsuredFlight[] memory result = new InsuredFlight[](insuredFlightIds - 1);
-        for (uint256 i = 1; i < insuredFlightIds; i++) {
-            result[i - 1] = _insuredFlight[i];
-        }
-        return result;
+    function getInsureFlight(uint256 insuredFlightId) 
+    public 
+    view 
+    returns (
+        string memory aircraftIcao,
+        string memory aircraftName,
+        string memory flightDate,
+        string memory departureAirport,
+        string memory arrivalAirport,
+        uint256 flightDelayedTime,
+        string memory flightNo,
+        uint256 passengers,
+        string memory status,
+        uint256 lastChecked,
+        address insurer,
+        uint256 insuranceId
+    ) 
+{
+    require(
+        insuredFlightId > 0 && insuredFlightId <= insuredFlightIds, 
+        "No insured flight with such id"
+    );
+
+    InsuredFlight storage f = _insuredFlight[insuredFlightId];
+
+    return (
+        f.aircraftIcao,
+        f.aircraftName,
+        f.flightDate,
+        f.departureAirport,
+        f.arrivalAirport,
+        f.flightDelayedTime,
+        f.flightNo,
+        f.passengers,
+        f.status,
+        f.lastChecked,
+        f.insurer,
+        f.insuranceId
+    );
+}
+
+
+    function getInsuranceClaim(uint256 _insuredClaimId) 
+    public 
+    view 
+    returns (
+        uint256 amountClaimed,
+        uint256 dateClaimed,
+        address insuree,
+        uint256 insuranceId
+    ) 
+{
+    require(
+        _insuredClaimId > 0 && _insuredClaimId <= insuranceClaimsIds, 
+        "No insurance claim with such id"
+    );
+
+    InsuranceClaim storage c = _insuranceClaims[_insuredClaimId];
+
+    return (
+        c.amountClaimed,
+        c.dateClaimed,
+        c.insuree,
+        c.insuranceId
+    );
+}
+
+
+    function getInsuredFlightsCount() public view returns (uint256) {
+        return insuredFlightIds;
     }
 
-    function getAllClaims() public view returns (AllClaims[] memory) {
-        AllClaims[] memory result = new AllClaims[](insuranceClaimsIds - 1);
-        for (uint256 i = 1; i < insuranceClaimsIds; i++) {
-            result[i - 1] = _insuranceClaims[i];
-        }
-        return result;
+    function getInsuranceClaimsCount() public view returns (uint256) {
+        return insuranceClaimsIds;
     }
 
+    
     function setInsurancePrice(uint256 _insurancePrice) external onlyOwner {
         require(_insurancePrice > 0, "Insurance price must be greater than 0");
         INSURANCE_PRICE = _insurancePrice;
@@ -256,10 +316,7 @@ contract insuredFlightsAgency {
 
     function abiSignatureHack(DataTransportObject calldata dto) public pure {}
 
-    function isWeb2JsonProofValid(
-        IWeb2Json.Proof calldata _proof
-    ) private view returns (bool) {
-        // Inline the check for now until we have an official contract deployed
+    function isWeb2JsonProofValid(IWeb2Json.Proof calldata _proof) private view returns (bool) {
         return ContractRegistry.getFdcVerification().verifyWeb2Json(_proof);
     }
 

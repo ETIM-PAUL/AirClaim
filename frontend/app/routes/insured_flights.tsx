@@ -1,48 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaCalendarAlt, FaMoneyBill, FaPlane, FaPlus, FaSatellite } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "~/components/Sidebar";
 import { useGeneral } from "../context/GeneralContext";
 
 const FlightsOverviewPage = () => {
-  const [flights, setFlights] = useState<any[]>([
-    {
-      id: "1",
-      flightNumber: "UA-482",
-      airline: "United Airlines",
-      airlineImage: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/United_Airlines_logo_2010.svg/1200px-United_Airlines_logo_2010.svg.png",
-      departureAirport: "JFK",
-      arrivalAirport: "LAX",
-      flightDate: "2023-10-15",
-      flightStatus: "Active",
-      insuredAmount: "560 FLR",
-    },
-    {
-      id: "2",
-      flightNumber: "DL-123",
-      airline: "Delta Airlines",
-      airlineImage: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Delta_Airlines_logo_2014.svg/1200px-Delta_Airlines_logo_2014.svg.png",
-      departureAirport: "ATL",
-      arrivalAirport: "SFO",
-      flightDate: "2023-10-20",
-      flightStatus: "Delayed",
-      insuredAmount: "720 FLR",
-    },
-    {
-      id: "3",
-      flightNumber: "AA-456",
-      airline: "American Airlines",
-      airlineImage: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/American_Airlines_logo_2013.svg/1200px-American_Airlines_logo_2013.svg.png",
-      departureAirport: "DFW",
-      arrivalAirport: "ORD",
-      flightDate: "2023-10-25",
-      flightStatus: "Cancelled",
-      insuredAmount: "480 FLR",
-    },
-  ]);
-
   const navigate = useNavigate();
-  const { isSidebarCollapsed } = useGeneral();
+  const { isSidebarCollapsed, loadingFlights, allFlights  } = useGeneral();
 
   const handleInsureNewFlight = () => {
     // Navigate to the page for insuring a new flight
@@ -53,6 +17,7 @@ const FlightsOverviewPage = () => {
     // Navigate to the flight details page
     navigate(`/flight-details/${flightId}`);
   };
+  
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-950">
@@ -75,11 +40,16 @@ const FlightsOverviewPage = () => {
         <hr className="border-gray-800 mb-8" />
 
         {/* Flights Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {flights.map((flight) => (
-            <div key={flight.id} className="bg-[#101112] rounded-2xl p-6 shadow-xl transition-transform hover:scale-[1.01]">
+        {loadingFlights && <p>Loading flights...</p>}
+        {!loadingFlights && allFlights.length === 0 && <p>No flights found</p>}
+
+        <div className="flex md:flex-wrap gap-6">
+          {allFlights.map((flight:any) => (
+            <div key={flight.id} className="bg-[#101112] grow w-full md:max-w-md rounded-2xl p-6 shadow-xl transition-transform hover:scale-[1.01]">
               <div className="flex items-center gap-4 mb-4">
-                <img src="https://randomuser.me/api/portraits/men/32.jpg" alt={flight.airline} className="w-12 h-12 rounded-full shadow-lg" />
+                <div className="w-10 h-10 rounded-full bg-gray-300 flex justify-center items-center">
+                  <span className="font-bold">{flight.aircraftIcao}</span>
+                </div>
                 <div>
                   <h2 className="text-lg font-bold">{flight.airline}</h2>
                   <p className="text-gray-400">{flight.flightNumber}</p>
@@ -89,24 +59,26 @@ const FlightsOverviewPage = () => {
                 <div className="flex items-center gap-2">
                   <FaPlane className="text-green-400" />
                   <p className="text-gray-400">Route</p>
-                  <p className="font-semibold font-xs">{flight.departureAirport} → {flight.arrivalAirport}</p>
+                  <p className="font-semibold font-xs">{flight.departureAirport.length > 30 ? flight.departureAirport.slice(0,30) : flight.departureAirport} → {flight.arrivalAirport.length > 30 ? flight.arrivalAirport.slice(0,30) : flight.arrivalAirport}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <FaCalendarAlt className="text-green-400" />
-                  <p className="text-gray-400">Date</p>
-                  <p className="font-semibold font-xs">{flight.flightDate}</p>
+
+                <div className="inline">
+                  <div className="flex items-center gap-2">
+                    <FaCalendarAlt className="text-green-400" />
+                    <p className="text-gray-400">Date</p>
+                    <p className="font-semibold font-xs">{flight.flightDate}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <FaSatellite className="text-green-400" />
+                    <p className="text-gray-400">Status</p>
+                    <p className={`font-semibold ${Number(flight.flightDelayedTime) >= 30 ? "text-yellow-400" : flight.flightStatus === "cancelled" ? "text-red-400" : "text-green-400"}`}>{Number(flight.flightDelayedTime) >= 30 ? "delayed" : flight?.flightStatus}</p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <FaSatellite className="text-green-400" />
-                  <p className="text-gray-400">Status</p>
-                  <p className={`font-semibold font-xs ${flight.flightStatus === "Delayed" ? "text-yellow-400" : flight.flightStatus === "Cancelled" ? "text-red-400" : "text-green-400"}`}>
-                    {flight.flightStatus}
-                  </p>
-                </div>
+
                 <div className="flex items-center gap-2">
                   <FaMoneyBill className="text-green-400" />
                   <p className="text-gray-400">Insured Amount</p>
-                  <p className="font-semibold font-xs">{flight.insuredAmount}</p>
+                  <p className="font-semibold font-xs">{flight.insuredAmount} FLR</p>
                 </div>
               </div>
               <button

@@ -1,7 +1,14 @@
+import { Provider, useAppKitProvider } from "@reown/appkit/react";
+import { ethers } from "ethers";
 import { useState } from "react";
 import { FaPlane, FaCalendarAlt, FaMapMarkerAlt, FaUserFriends, FaDollarSign, FaCheckCircle, FaPlus, FaTicketAlt, FaClock, FaArrowLeft } from "react-icons/fa";
 import { toast } from "react-toastify";
+import { insureFlightAction } from "scripts/insureFlight";
 import Sidebar from "~/components/Sidebar";
+import { shortenAddress } from "~/utils";
+import { Dialog, Transition } from '@headlessui/react'
+import { Fragment } from 'react'
+import { useNavigate } from "react-router";
 
 const InsureFlightPage = () => {
   const [flightData, setFlightData] = useState({
@@ -9,26 +16,19 @@ const InsureFlightPage = () => {
     airline_icao: "",
     insuredAmount: "",
   });
-  const [economyPrice, setEconomyPrice] = useState(0);
-  const [businessPrice, setBusinessPrice] = useState(0);
-  const [firstClassPrice, setFirstClassPrice] = useState(0);
+  const [processing, setProcessing] = useState(false);
+  const [selectedTicketType, setSelectedTicketType] = useState("null");
+  const [selectedWallet, setSelectedWalet] = useState("");
+  const [economyPrice, setEconomyPrice] = useState("");
+  const [businessPrice, setBusinessPrice] = useState("");
+  const [firstClassPrice, setFirstClassPrice] = useState("");
   const [numberOfPassengers, setNumberOfPassengers] = useState(0);
   const [currentTab, setCurrentTab] = useState("flightDetails");
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [passengers, setPassengers] = useState<
-    { name: string; ticketType: string; ticketPrice: string }[]
+    { wallet: string; ticketType: string; ticketPrice: any }[]
   >([]);
-  const [newPassenger, setNewPassenger] = useState({
-    name: "",
-    ticketType: "Economy",
-    ticketPrice: "",
-  });
-
-  const ticketPrices:any = {
-    "Economy": 100,
-    "Business": 200,
-    "First Class": 300,
-  };
+  const { walletProvider } = useAppKitProvider<Provider>("eip155");
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -38,19 +38,18 @@ const InsureFlightPage = () => {
     }));
   };
 
-  const handlePassengerInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setNewPassenger((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
-  };
+  const navigate = useNavigate();
 
   const handleAddPassenger = () => {
-    if (newPassenger.name && newPassenger.ticketType) {
-      setPassengers([...passengers, newPassenger]);
-      setNewPassenger({ name: "", ticketType: "Economy", ticketPrice: ticketPrices[newPassenger.ticketType] });
+    if (selectedTicketType == "null" || selectedWallet === "") {
+      toast.error("select a ticket type");
+      return;
     }
+    if (selectedTicketType && selectedWallet) {
+      setPassengers([...passengers, { wallet: selectedWallet, ticketType: selectedTicketType, ticketPrice: selectedTicketType === "Economy" ? ethers.parseEther(economyPrice) :  selectedTicketType === "Business" ? ethers.parseEther(businessPrice) : ethers.parseEther(firstClassPrice)}]);
+    }
+    setSelectedTicketType("null");
+    setSelectedWalet("");
   };
 
   const proceed = () => {
@@ -58,6 +57,25 @@ const InsureFlightPage = () => {
       setCurrentTab("passengers");
     } else {
       toast.error("Please fill all the fields");
+    }
+  };
+  
+  const insureFlightDetails = async () => {
+    try {
+      setProcessing(true);
+      const result:any = await insureFlightAction(flightData?.airline_icao, flightData?.flightNumber, passengers, walletProvider);
+      if (result?.data) {
+        toast.success("Flight Insured");
+        setProcessing(false);
+        navigate("/insured-flights");
+      } else {
+        toast.error("Flight can't be insured. Please confirm flight is scheduled and passengers details are correct");
+        setProcessing(false);
+      }
+    } catch (error:any) {
+      toast.error(error);
+      console.log("error",error)
+      setProcessing(false);
     }
   };
 
@@ -264,9 +282,8 @@ const InsureFlightPage = () => {
                     <input
                       type="text"
                       id="passengerName"
-                      name="name"
-                      value={newPassenger.name}
-                      onChange={handlePassengerInputChange}
+                      name="wallet"
+                      onChange={(e) => setSelectedWalet(e.target.value)}
                       className="w-full bg-gray-800 text-white p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all mt-1"
                       required
                     />
@@ -283,11 +300,11 @@ const InsureFlightPage = () => {
                     <select
                       id="ticketType"
                       name="ticketType"
-                      value={newPassenger.ticketType}
-                      onChange={handlePassengerInputChange}
+                      onChange={(e) => setSelectedTicketType(e.target.value)}
                       className="w-full bg-gray-800 text-white p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all mt-1"
                       required
                     >
+                      <option value="null">--select type--</option>
                       <option value="Economy">Economy</option>
                       <option value="Business">Business</option>
                       <option value="First Class">First Class</option>
@@ -338,7 +355,7 @@ const InsureFlightPage = () => {
                   <table className="w-full text-left text-sm">
                     <thead className="text-gray-400 border-b border-gray-700">
                       <tr>
-                        <th className="py-2">Name</th>
+                        <th className="py-2">Address</th>
                         <th>Ticket Type</th>
                         <th>Ticket Price (FLR)</th>
                       </tr>
@@ -346,7 +363,7 @@ const InsureFlightPage = () => {
                     <tbody>
                       {passengers.map((passenger, idx) => (
                         <tr key={idx} className="border-b border-gray-800 hover:bg-gray-900 transition">
-                          <td className="py-2 font-semibold">{passenger.name}</td>
+                          <td className="py-2 font-semibold">{shortenAddress(passenger.wallet)}</td>
                           <td>{passenger.ticketType}</td>
                           <td>{passenger.ticketType === "Economy" ? economyPrice : passenger.ticketType === "Business" ? businessPrice : firstClassPrice}</td>
                         </tr>
@@ -365,31 +382,78 @@ const InsureFlightPage = () => {
       </main>
 
       {showConfirmationModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="md:w-lg px-8 py-6 bg-gradient-to-br from-gray-900 via-black to-gray-950 shadow-xl text-center rounded-2xl">
-            <h2 className="text-2xl font-bold mb-4">Confirmation</h2>
-            <p className="text-gray-400">Are you sure you want to proceed?</p>
-            <p className="text-red-400">The total price of the insurance is {passengers.reduce((total, passenger) => {
-              const ticketPrice = passenger.ticketType === "Economy" ? economyPrice : 
-                                 passenger.ticketType === "Business" ? businessPrice : 
-                                 firstClassPrice;
-              return total + (ticketPrice * 0.1);
-            }, 0)} FLR</p>
-            <div className="flex items-center gap-3">
-                <button
-                type="button"
-                onClick={() => setShowConfirmationModal(false)}
-                className="w-full cursor-pointer mt-6 bg-gray-400 py-3 rounded-lg text-white text-sm font-semibold shadow hover:from-green-600 hover:to-cyan-700 transition-all transform hover:scale-105"
-                >
-                <FaArrowLeft className="inline-block mr-2" />
-                Back
-                </button>
-                <button className="w-full cursor-pointer mt-6 bg-gradient-to-r from-green-500 to-cyan-600 py-3 rounded-lg text-white text-sm font-semibold shadow hover:from-green-600 hover:to-cyan-700 transition-all transform hover:scale-105">
-                    Proceed
-                </button>
+        <Transition appear show={showConfirmationModal} as={Fragment}>
+        <Dialog
+          as="div"
+          className="relative z-50"
+          onClose={() => setShowConfirmationModal(false)}
+        >
+          {/* Background overlay */}
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-200"
+            enterFrom="opacity-0"
+            enterTo="opacity-50"
+            leave="ease-in duration-150"
+            leaveFrom="opacity-50"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black opacity-50" />
+          </Transition.Child>
+  
+          {/* Modal content */}
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-200"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-150"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <Dialog.Panel className="md:w-lg px-8 py-6 bg-gradient-to-br from-gray-900 via-black to-gray-950 shadow-xl text-center rounded-2xl">
+                  <Dialog.Title className="text-2xl font-bold mb-4">
+                    Confirmation
+                  </Dialog.Title>
+                  <p className="text-gray-400">
+                    Are you sure you want to proceed?
+                  </p>
+                  <p className="text-red-400">
+                    The total price of the insurance is {passengers.reduce((total, passenger) => {
+                    const ticketPrice = passenger.ticketType === "Economy" ? economyPrice : 
+                                      passenger.ticketType === "Business" ? businessPrice : 
+                                      firstClassPrice;
+                    return total + (Number(ticketPrice) * 0.1);
+                  }, 0)} FLR
+                  </p>
+  
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      disabled={processing}
+                      onClick={() => setShowConfirmationModal(false)}
+                      className="w-full disabled:cursor-not-allowed cursor-pointer mt-6 bg-gray-400 py-3 rounded-lg text-white text-sm font-semibold shadow hover:bg-gray-500 transition-all transform hover:scale-105"
+                    >
+                      <FaArrowLeft className="inline-block mr-2" />
+                      Back
+                    </button>
+  
+                    <button
+                      disabled={processing}
+                      onClick={insureFlightDetails}
+                      className="w-full cursor-pointer disabled:cursor-not-allowed mt-6 bg-gradient-to-r from-green-500 to-cyan-600 py-3 rounded-lg text-white text-sm font-semibold shadow hover:from-green-600 hover:to-cyan-700 transition-all transform hover:scale-105"
+                    >
+                      {processing ? 'Processing' : 'Proceed'}
+                    </button>
+                  </div>
+                </Dialog.Panel>
+              </Transition.Child>
             </div>
           </div>
-        </div>
+        </Dialog>
+      </Transition>
       )}
     </div>
   );
