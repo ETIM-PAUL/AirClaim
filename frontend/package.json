@@ -10,6 +10,7 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@flarenetwork/flare-periphery-contract-artifacts": "^0.1.36",
     "@headlessui/react": "^2.2.7",
     "@react-router/dev": "^7.5.3",
     "@react-router/node": "^7.5.1",

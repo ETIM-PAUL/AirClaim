@@ -1,4 +1,4 @@
-import { Provider, useAppKitProvider } from "@reown/appkit/react";
+import { Provider, useAppKit, useAppKitAccount, useAppKitProvider } from "@reown/appkit/react";
 import { ethers } from "ethers";
 import { useState } from "react";
 import { FaPlane, FaCalendarAlt, FaMapMarkerAlt, FaUserFriends, FaDollarSign, FaCheckCircle, FaPlus, FaTicketAlt, FaClock, FaArrowLeft } from "react-icons/fa";
@@ -9,8 +9,13 @@ import { shortenAddress } from "~/utils";
 import { Dialog, Transition } from '@headlessui/react'
 import { Fragment } from 'react'
 import { useNavigate } from "react-router";
+import { Wallet } from "lucide-react";
+import { useGeneral } from "~/context/GeneralContext";
 
 const InsureFlightPage = () => {
+  const { address, isConnected } = useAppKitAccount(); // Use reown's wallet hooks
+  const { allFlights, fetchInsuredFlights  } = useGeneral();
+  const { open} = useAppKit();
   const [flightData, setFlightData] = useState({
     flightNumber: "",
     airline_icao: "",
@@ -26,7 +31,7 @@ const InsureFlightPage = () => {
   const [currentTab, setCurrentTab] = useState("flightDetails");
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [passengers, setPassengers] = useState<
-    { wallet: string; ticketType: string; ticketPrice: any }[]
+    { wallet: string; ticketType: string; ticketPrice: any, insuredFlightId:number }[]
   >([]);
   const { walletProvider } = useAppKitProvider<Provider>("eip155");
 
@@ -46,7 +51,7 @@ const InsureFlightPage = () => {
       return;
     }
     if (selectedTicketType && selectedWallet) {
-      setPassengers([...passengers, { wallet: selectedWallet, ticketType: selectedTicketType, ticketPrice: selectedTicketType === "Economy" ? ethers.parseEther(economyPrice) :  selectedTicketType === "Business" ? ethers.parseEther(businessPrice) : ethers.parseEther(firstClassPrice)}]);
+      setPassengers([...passengers, { wallet: selectedWallet, ticketType: selectedTicketType, ticketPrice: selectedTicketType === "Economy" ? ethers.parseEther(economyPrice) :  selectedTicketType === "Business" ? ethers.parseEther(businessPrice) : ethers.parseEther(firstClassPrice), insuredFlightId:Number(allFlights?.length+1)}]);
     }
     setSelectedTicketType("null");
     setSelectedWalet("");
@@ -67,6 +72,7 @@ const InsureFlightPage = () => {
       if (result?.data) {
         toast.success("Flight Insured");
         setProcessing(false);
+        fetchInsuredFlights();
         navigate("/insured-flights");
       } else {
         toast.error("Flight can't be insured. Please confirm flight is scheduled and passengers details are correct");
@@ -99,6 +105,18 @@ const InsureFlightPage = () => {
         <hr className="border-gray-800 mb-8" />
 
         {/* Flight Insurance Form */}
+        {!isConnected ? (
+                    <div className="flex flex-col items-center justify-center min-h-[400px]">
+                      <h2 className="text-2xl font-bold text-white mb-6">Connect Your Wallet</h2>
+                      <button
+                        onClick={() => open({ view: "Connect", namespace: "eip155" })}
+                        className="bg-[#9e74eb] text-white px-8 py-4 rounded-xl hover:opacity-90 transition-all duration-200 flex items-center gap-2"
+                      >
+                        <Wallet className="w-5 h-5" />
+                        Connect Wallet
+                      </button>
+                    </div>
+                  ) : (
         <div className="bg-[#101112] rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-shadow duration-300">
           <div className="md:flex w-full gap-6">
             
@@ -379,6 +397,7 @@ const InsureFlightPage = () => {
             )}
           </div>
         </div>
+        )}
       </main>
 
       {showConfirmationModal && (

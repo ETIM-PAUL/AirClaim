@@ -273,7 +273,7 @@ const Dashboard = () => {
               </div>
             }
             {allClaims?.length === 0 &&
-              <p>No flights found</p>
+              <p>No claims found</p>
             }
           </div>
         </div>

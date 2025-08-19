@@ -1,7 +1,7 @@
 // ... existing code ...
 import React, { useContext, useEffect, useState } from 'react'
-import { Copy, Wallet, Network, Coins } from "lucide-react";
-import { useAppKit, useAppKitAccount, useAppKitBalance, useDisconnect } from '@reown/appkit/react'; 
+import { Wallet } from "lucide-react";
+import { useAppKit, useAppKitAccount } from '@reown/appkit/react'; 
 import Sidebar from '~/components/Sidebar';
 import { useGeneral } from '~/context/GeneralContext';
 

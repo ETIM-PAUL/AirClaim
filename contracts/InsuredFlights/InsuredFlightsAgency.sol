@@ -5,11 +5,15 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
 import {IWeb2Json} from "@flarenetwork/flare-periphery-contracts/coston2/IWeb2Json.sol";
 import {RandomNumberV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/RandomNumberV2Interface.sol";
+import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
+import {IFeeCalculator} from "@flarenetwork/flare-periphery-contracts/coston2/IFeeCalculator.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 struct Passenger {
     address wallet;
     string ticketType;
     uint256 ticketPrice;
+    uint256 insuredFlightId;
 }
 
 struct InsuredFlight {
@@ -32,6 +36,8 @@ struct InsuranceClaim {
     uint dateClaimed;
     address insuree;
     uint256 insuranceId;
+    bool playedPrediction;
+    bool wonPrediction;
 }
 
 struct DataTransportObject {
@@ -50,10 +56,11 @@ contract insuredFlightsAgency {
     uint256 public insuranceClaimsIds;
     uint256 public INSURANCE_PRICE;
     uint256 public insurance_delay_time;
+    address public usdt_address;
     mapping(uint256 => InsuredFlight) public _insuredFlight;
     mapping(uint256 => uint256) public _insuredFlightPrice;
     mapping(uint256 => InsuranceClaim) public _insuranceClaims;
-    mapping(uint256 => Passenger[]) public _insuranceFlightPassengers;
+    Passenger[] public _insuranceFlightPassengers;
     mapping(uint256 => mapping(address => bool)) public insuredFlightPassengersStatus;
 
     uint16 private _secretNumber;
@@ -72,9 +79,10 @@ contract insuredFlightsAgency {
         _;
     }
 
-    constructor(uint256 _insurancePrice) {
+    constructor(uint256 _insurancePrice, address _usdt_address) {
         INSURANCE_PRICE = _insurancePrice;
         insurance_delay_time = 30;
+        usdt_address = _usdt_address;
         owner = msg.sender;
         _generator = ContractRegistry.getRandomNumberV2();
         _setNewSecretNumber();
@@ -84,7 +92,7 @@ contract insuredFlightsAgency {
         require(_insuredFlight[insuredFlightId].insuranceId != 0 && _insuredFlight[insuredFlightId].insuranceId < insuredFlightIds, "Invalid Insurance");
         require(
             msg.sender == _insuredFlight[insuredFlightId].insurer ||
-            (_insuranceFlightPassengers[insuredFlightId].length > 0 && _insuranceFlightPassengers[insuredFlightId][0].wallet == msg.sender) ||
+            (_insuranceFlightPassengers.length > 0 &&_insuranceFlightPassengers[0].wallet == msg.sender) ||
             msg.sender == owner,
             "Either Insurer or Passenger can check flight delay"
         );
@@ -98,7 +106,7 @@ contract insuredFlightsAgency {
         if (dto.flight_delayed_time >= insurance_delay_time && 
             keccak256(bytes(dto.flight_status)) != keccak256("active") &&
             keccak256(bytes(dto.flight_status)) != keccak256("landed")) {
-            _insuredFlight[insuredFlightId].status = dto.flight_status;
+            _insuredFlight[insuredFlightId].status = "delayed";
             _insuredFlight[insuredFlightId].flightDelayedTime = dto.flight_delayed_time;
         }
         _insuredFlight[insuredFlightId].lastChecked = block.timestamp;
@@ -151,7 +159,7 @@ contract insuredFlightsAgency {
 
         // Calculate and store flight price
         for (uint256 i = 0; i < passengers.length; i++) {
-            _insuranceFlightPassengers[currentId].push(passengers[i]);
+            _insuranceFlightPassengers.push(passengers[i]);
             insuredFlightPassengersStatus[currentId][passengers[i].wallet] = true;
             _totalAmountInsurance += (passengers[i].ticketPrice * 10) / 100;
             total+= (passengers[i].ticketPrice * 10) / 100;
@@ -170,47 +178,76 @@ contract insuredFlightsAgency {
         return total + INSURANCE_PRICE;
     }
 
-    function getFlightPassengers(uint256 _flightId) public view returns (Passenger[] memory) {
-        return _insuranceFlightPassengers[_flightId];
+    function getFlightPassengers() public view returns (Passenger[] memory) {
+        return _insuranceFlightPassengers;
     }
 
     // Split claim function into multiple parts
     function claimInsurance(
         uint insuredFlightId, 
         string memory flight_no, 
-        uint256 predictedNumber
+        uint256 predictedNumber,
+        uint256 passengerindexPosition,
+        bool usdtMode
     ) external returns (uint256, bool) {
-        _validateClaimRequirements(insuredFlightId, flight_no);
-        return _processClaim(insuredFlightId, predictedNumber);
+        _validateClaimRequirements(insuredFlightId, flight_no, predictedNumber);
+        return _processClaim(insuredFlightId, predictedNumber, passengerindexPosition, usdtMode);
     }
 
-    function _validateClaimRequirements(uint insuredFlightId, string memory flight_no) private view {
+    function _validateClaimRequirements(uint insuredFlightId, string memory flight_no, uint predictedNumber) private view {
         require(keccak256(abi.encodePacked(_insuredFlight[insuredFlightId].flightNo)) == keccak256(abi.encodePacked(flight_no)), "Flight No doesn't match");
         require(_insuredFlight[insuredFlightId].flightDelayedTime >= insurance_delay_time, "Flight Not Delayed");
         require(insuredFlightPassengersStatus[insuredFlightId][msg.sender], "Passenger not insured OR Insurance already redeemed");
+        require(predictedNumber <= 20, "Prediction Number must be <= 20");
     }
 
-    function _processClaim(uint insuredFlightId, uint256 predictedNumber) private returns (uint256, bool) {
+    function _processClaim(uint insuredFlightId, uint256 predictedNumber, uint256 passengerindexPosition, bool usdtMode) private returns (uint256, bool) {
         insuredFlightPassengersStatus[insuredFlightId][msg.sender] = false;
-        insuranceClaimsIds++;
         
         uint256 currentSecret = _secretNumber;
-        uint256 baseAmount = (_insuredFlightPrice[insuredFlightId] * 10) / 100;
+        uint256 baseAmountFlr = 0;
+        uint256 baseAmountUsdt = 0;
+        (uint256 _feedValues, uint64 _decimals) = getFlrUsdPriceWei();
+        bool isSufficient;
+        if (usdtMode) {
+        baseAmountUsdt = ((_insuranceFlightPassengers[passengerindexPosition].ticketPrice * 10) / 100) * _feedValues;
+        isSufficient = hasSufficientBalance(baseAmountUsdt);
+        } else {
+        baseAmountFlr = (_insuranceFlightPassengers[passengerindexPosition].ticketPrice * 10) / 100;
+        }
         bool predictionSuccess = false;
 
         if (predictedNumber == 0) {
-            payable(msg.sender).transfer(baseAmount / 2);
-        } else if (predictedNumber == currentSecret) {
-            payable(msg.sender).transfer(baseAmount);
+            if (isSufficient) {
+                IERC20(usdt_address).transfer(msg.sender, baseAmountUsdt);
+            } else {
+                payable(msg.sender).transfer(baseAmountFlr);
+            }
+        } else if (predictedNumber > 0) {
+            if (predictedNumber == currentSecret) {
+            if (isSufficient) {
+                IERC20(usdt_address).transfer(msg.sender, baseAmountUsdt);
+            } else {
+                payable(msg.sender).transfer(baseAmountFlr);
+            }
+            payable(msg.sender).transfer(2e18);
             predictionSuccess = true;
-        } else {
-            payable(msg.sender).transfer(5e17);
+            } else {
+                if (isSufficient) {
+                IERC20(usdt_address).transfer(msg.sender, baseAmountUsdt/2);
+            } else {
+                payable(msg.sender).transfer(baseAmountFlr/2);
+            }
+            }    
         }
 
-        _insuranceClaims[insuranceClaimsIds].amountClaimed = baseAmount;
+        _insuranceClaims[insuranceClaimsIds].amountClaimed = baseAmountFlr;
         _insuranceClaims[insuranceClaimsIds].dateClaimed = block.timestamp;
         _insuranceClaims[insuranceClaimsIds].insuree = msg.sender;
         _insuranceClaims[insuranceClaimsIds].insuranceId = insuredFlightId;
+        _insuranceClaims[insuranceClaimsIds].playedPrediction = predictedNumber > 0 ? true : false;
+        _insuranceClaims[insuranceClaimsIds].wonPrediction = predictedNumber == currentSecret ? true : false;
+        insuranceClaimsIds++;
 
         _setNewSecretNumber();
         emit FlightClaimed(insuredFlightId, msg.sender, currentSecret);
@@ -312,6 +349,23 @@ contract insuredFlightsAgency {
     function _setNewSecretNumber() private {
         (uint256 randomNumber, , ) = _generator.getRandomNumber();
         _secretNumber = uint16(randomNumber % _maxNumber);
+    }
+
+    function hasSufficientBalance(uint256 amount) 
+        public 
+        view 
+        returns (bool sufficient) 
+    {
+        uint256 balance = IERC20(usdt_address).balanceOf(address(this));
+        return balance >= amount;
+    }
+
+    function getFlrUsdPriceWei() public view returns (uint256, uint64) {
+        bytes21 flrUsdId = 0x01464c522f55534400000000000000000000000000; // "FLR/USD"
+        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
+        TestFtsoV2Interface ftsoV2 = ContractRegistry.getTestFtsoV2();
+        /* Your custom feed consumption logic. In this example the values are just returned. */
+        return ftsoV2.getFeedByIdInWei(flrUsdId);
     }
 
     function abiSignatureHack(DataTransportObject calldata dto) public pure {}

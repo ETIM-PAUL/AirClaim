@@ -12,8 +12,7 @@ import type { Route } from "./+types/root";
 import "./app.css";
 import { createAppKit, useAppKitAccount } from "@reown/appkit/react";
 import { EthersAdapter } from "@reown/appkit-adapter-ethers";
-import { AppKitNetwork, mainnet } from "@reown/appkit/networks";
-import { ToastContainer, toast } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { GeneralProvider } from "./context/GeneralContext";
 

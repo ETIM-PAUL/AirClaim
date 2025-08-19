@@ -12,12 +12,18 @@ import { ethers } from 'ethers';
 import insuredFlightsAgencyAbi from 'insuredFlightsAgency.json';
 import { toast } from 'react-toastify';
 import Outcome from '~/components/Outcome';
+import { useAppKitProvider, Provider, useAppKitAccount } from '@reown/appkit/react';
+import { checkFlightDelayAction } from 'scripts/updateFlight';
 
 const FlightDetailsPage = () => {
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
-  const [participateInPrediction, setParticipateInPrediction] = useState(false);
+  const { address } = useAppKitAccount(); // Use reown's wallet hooks
+  const [participateInPrediction, setParticipateInPrediction] = useState(true);
+  const [claimInUsdt, setClaimInUsdt] = useState(false);
   const [prediction, setPrediction] = useState(0);
   const [processing, setProcessing] = useState(false);
+
+  const { walletProvider } = useAppKitProvider<Provider>("eip155");
 
   // Modal state
   const [open, setOpen] = useState(false);
@@ -25,7 +31,7 @@ const FlightDetailsPage = () => {
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
 
-  const { isSidebarCollapsed, loadingFlights, allFlights, allClaims  } = useGeneral();
+  const { fetchInsuredFlights, allPassengers, loadingFlights, allFlights, allClaims  } = useGeneral();
   const params:any = useParams();
 
   const iface:any = useMemo(() => new ethers.Interface(insuredFlightsAgencyAbi.abi), [insuredFlightsAgencyAbi.abi]);
@@ -74,8 +80,33 @@ const FlightDetailsPage = () => {
     setIsClaimModalOpen(true);
   };
 
+  const handleCheckFlightUpdate = async () => {
+    try {
+      setProcessing(true);
+      const result:any = await checkFlightDelayAction(flight?.airline_icao, flight?.flightNumber, Number(params?.id), walletProvider);
+      if (result?.data) {
+        toast.success("Flight Insured");
+        setProcessing(false);
+        fetchInsuredFlights();
+      } else {
+        toast.error("Flight status can't be updated. Try again later");
+        setProcessing(false);
+      }
+    } catch (error:any) {
+      const reason = extractRevertReason(error);
+      toast.error(reason || "Transaction failed");
+      console.log("error",error)
+      setProcessing(false);
+    }
+  };
+
 
   const handleClaim = async () => {
+    const i = allPassengers.findIndex((item:any) => (item[0].toLowerCase() === address?.toLowerCase() && Number(item[3]) === Number(params?.id)))
+    if (i === -1) {
+      toast.error("ooops, not a passenger on this flight");
+      return;
+    }
     try {
       setProcessing(true);
       const provider = new ethers.BrowserProvider(window.ethereum as any);
@@ -84,7 +115,7 @@ const FlightDetailsPage = () => {
       const contract = new ethers.Contract(insuredFlightsAgencyAddress, insuredFlightsAgencyAbi?.abi, signer);
 
       // Send tx and wait for receipt
-      const tx = await contract.claimInsurance(Number(params?.id), flight?.flightNumber, Number(prediction));
+      const tx = await contract.claimInsurance(Number(params?.id), flight?.flightNumber, Number(prediction),i, claimInUsdt);
       const toastL = toast.loading("Submitting claim…");
       const receipt = await tx.wait();
       toast.dismiss(toastL)
@@ -116,7 +147,7 @@ const FlightDetailsPage = () => {
           // Not our event
         }
       }
-console.log("FoundEvent",foundEvent)
+
       // If not found in receipt (rare), try fetching logs for that block
       if (!foundEvent) {
         try {
@@ -152,7 +183,7 @@ console.log("FoundEvent",foundEvent)
         setIsClaimModalOpen(false);
         setModalMode("win");
         setModalTitle("🎉 You won the prediction game!");
-        setModalMessage("You get the full insurance payout, plus 2 FLR tokens.");
+        setModalMessage("You got the full insurance payout, plus 2 FLR tokens.");
       } else {
         setIsClaimModalOpen(false);
         setModalMode("lose");
@@ -214,13 +245,13 @@ console.log("FoundEvent",foundEvent)
             <div className="space-y-4">
               <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gray-300 flex justify-center items-center">
-                  <span className="font-bold">{flight.aircraftIcao}</span>
+                  <span className="font-bold">{flight?.aircraftIcao}</span>
                 </div>
                 <div className="flex items-center gap-3">
                 <FaPlane className="text-green-400 text-xl" />
                 <div>
                   <p className="text-gray-400">Aircraft</p>
-                  <p className="font-semibold">{flight.airline} ({flight.airlineICAO})</p>
+                  <p className="font-semibold">{flight?.airline} ({flight?.aircraftIcao})</p>
                 </div>
               </div>
               </div>
@@ -229,21 +260,21 @@ console.log("FoundEvent",foundEvent)
                 <FaCalendarAlt className="text-green-400 text-xl" />
                 <div>
                   <p className="text-gray-400">Flight Date</p>
-                  <p className="font-semibold">{flight.flightDate}</p>
+                  <p className="font-semibold">{flight?.flightDate}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <FaMapMarkerAlt className="text-green-400 text-xl" />
                 <div>
                   <p className="text-gray-400">Departure / Arrival</p>
-                  <p className="font-semibold">{flight.departureAirport} → {flight.arrivalAirport}</p>
+                  <p className="font-semibold">{flight?.departureAirport} → {flight?.arrivalAirport}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <FaInfoCircle className="text-green-400 text-xl" />
                 <div>
                   <p className="text-gray-400">Flight Status</p>
-                  <p className={`font-semibold ${Number(flight.flightDelayedTime) >= 30 ? "text-yellow-400" : flight.flightStatus === "cancelled" ? "text-red-400" : "text-green-400"}`}>{Number(flight.flightDelayedTime) >= 30 ? "delayed" : flight?.flightStatus}</p>
+                  <p className={`font-semibold ${Number(flight?.flightDelayedTime) >= 30 ? "text-yellow-400" : flight?.flightStatus === "cancelled" ? "text-red-400" : "text-green-400"}`}>{Number(flight?.flightDelayedTime) >= 30 ? "delayed" : flight?.flightStatus}</p>
                 </div>
               </div>
 
@@ -251,16 +282,24 @@ console.log("FoundEvent",foundEvent)
                 <FaUserFriends className="text-green-400 text-xl" />
                 <div>
                   <p className="text-gray-400">Passengers</p>
-                  <p className="font-semibold">{flight.passengers ?? 0}</p>
+                  <p className="font-semibold">{flight?.passengers ?? 0}</p>
                 </div>
               </div>
               
-              {Number(flight.flightDelayedTime) >= 30 && (
+              {Number(flight?.flightDelayedTime) >= 30 && (
               <button
                 onClick={handleCheckFlightStatus}
                 className="mt-4 w-full bg-gradient-to-r from-green-400 to-emerald-500 py-2 rounded-lg text-white text-sm font-semibold shadow hover:from-emerald-600 hover:to-emerald-700 transition-all transform hover:scale-105 cursor-pointer"
               >
                 Claim Insurance
+              </button>
+              )}
+              {(Number(flight?.flightDelayedTime) < 30 && flight?.flightStatus === "scheduled") && (
+              <button
+                onClick={handleCheckFlightUpdate}
+                className="mt-4 w-full bg-gradient-to-r from-green-400 to-emerald-500 py-2 rounded-lg text-white text-sm font-semibold shadow hover:from-emerald-600 hover:to-emerald-700 transition-all transform hover:scale-105 cursor-pointer"
+              >
+                Check Flight Delay
               </button>
               )}
             </div>
@@ -274,14 +313,17 @@ console.log("FoundEvent",foundEvent)
                 <FaExclamationCircle className="text-red-400 text-xl" />
                 <div>
                   <p className="text-gray-400">Claim Status</p>
-                  <p className={`font-semibold ${flight.flightStatus === "delayed" ? "text-red-400" : "text-green-400"}`}>{flight.flightStatus === "delayed" ? "active" : "Not Claimed"}</p>
+                  <p className={`font-semibold ${Number(flight.flightDelayedTime) >= 30 ? "text-red-400" : "text-green-400"}`}>{Number(flight.flightDelayedTime) >= 30 ? "active" : "Not Claimed"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <FaCheckCircle className="text-green-400 text-xl" />
                 <div>
                   <p className="text-gray-400">Claimed FLR Tokens</p>
-                  <p className="font-semibold">{flight?.claimedFLR ?? 0} FLR</p>
+                  <p className="font-semibold">{allClaims?.filter((item:any) => Number(item.insuranceId) === Number(params?.id))?.reduce((total:number, item:any) => {
+                    const amountClaimed = item.amount;
+                    return total + Number(amountClaimed);
+                  }, 0).toString() + " FLR"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -310,39 +352,29 @@ console.log("FoundEvent",foundEvent)
         </div>
 
         {/* Passengers List */}
-        {/* <div className="bg-[#101112] rounded-2xl p-6 shadow-xl">
+        <div className="bg-[#101112] rounded-2xl p-6 shadow-xl">
           <h2 className="text-xl font-bold mb-4">Passengers</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="text-gray-400 border-b border-gray-700">
                 <tr>
-                  <th className="py-2">Name</th>
                   <th>Wallet Address</th>
                   <th>Ticket Type</th>
                   <th>Ticket Price</th>
-                  <th>Insured Amount</th>
-                  <th>Claimed</th>
-                  <th>Prediction Inclusive</th>
-                  <th>Won</th>
                 </tr>
               </thead>
-              <tbody>
-                {flight.passengersList.map((passenger: any, idx: any) => (
+              <tbody className='space-y-2'>
+                {flight.allPassengers.map((passenger: any, idx: any) => (
                   <tr key={idx} className="border-b border-gray-800 hover:bg-gray-900 transition">
-                    <td className="py-2 font-semibold">{passenger.name}</td>
-                    <td>{passenger.walletAddress.slice(0, 6)}...{passenger.walletAddress.slice(-4)}</td>
-                    <td>{passenger.ticketType}</td>
-                    <td>{passenger.ticketPrice} FLR</td>
-                    <td>{passenger.insuredAmount} FLR</td>
-                    <td className={`${passenger.claimed === "Yes" ? "text-green-400" : "text-red-400"}`}>{passenger.claimed}</td>
-                    <td className={`${passenger.predictionInclusive === "Yes" ? "text-green-400" : "text-red-400"}`}>{passenger.predictionInclusive}</td>
-                    <td className={`${passenger.won === "Yes" ? "text-green-400" : passenger.predictionInclusive === "Yes" ? "text-red-400" : "text-yellow-400"}`}>{passenger.won}</td>
+                    <td className='py-3'>{shortenAddress(passenger[0].slice(0, 6))}</td>
+                    <td className='py-3'>{passenger[1]}</td>
+                    <td className='py-3'>{ethers.formatEther(passenger.ticketPrice)} FLR</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div> */}
+        </div>
       </main>
 
       {/* Claim Insurance Modal */}
@@ -350,21 +382,51 @@ console.log("FoundEvent",foundEvent)
         <div className="fixed inset-0 flex mx-auto items-center justify-center bg-blac bg-opacity-50 backdrop-blur-sm">
           <div className="flex w-full justify-center">
             <div className="flex gap-6 bg-white rounded-2xl p-3">
-              <div className="w-1/2 flex flex-col justify-center items-center">
+              <div className="w-1/2 flex pl-4 flex-col justify-center items-cente">
                 <h2 className="text-2xl font-bold mb-6 text-gray-800">Claim Insurance</h2>
 
                 {/* Prediction Game Selector */}
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-600 mb-4">
+                    Do you want to claim your insurance in USDT Tokens?
+                  </label>
+                  <div className="flex items-center text-sm justify-cente gap-4">
+                    <button
+                      onClick={() => setClaimInUsdt(true)}
+                      className={`flex items-center justify-center gap-2 px-2 cursor-pointer py-2 rounded-xl transition-all transform hover:scale-105 ${
+                        claimInUsdt
+                          ? "bg-green-500 hover:bg-green-600 text-white shadow-lg"
+                          : "bg-white hover:bg-green-600 text-gray-700 shadow-sm hover:shadow-md"
+                      }`}
+                    >
+                      <Check className="w-5 h-5" />
+                      Yes
+                    </button>
+                    <button
+                      onClick={() => setClaimInUsdt(false)}
+                      className={`flex items-center justify-center gap-2 px-2 cursor-pointer py-2 rounded-xl transition-all transform hover:scale-105 ${
+                        !claimInUsdt
+                          ? "bg-gray-500 text-white shadow-lg"
+                          : "bg-white hover:bg-gray-600 text-gray-700 shadow-sm hover:shadow-md"
+                      }`}
+                    >
+                      <X className="w-5 h-5" />
+                      No
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-600 mb-4">
                     Do you want to participate in the prediction game?
                   </label>
-                  <div className="flex items-center justify-center gap-4">
+                  <div className="flex items-center text-sm justify-cente gap-4">
                     <button
                       onClick={() => setParticipateInPrediction(true)}
                       className={`flex items-center justify-center gap-2 px-2 cursor-pointer py-2 rounded-xl transition-all transform hover:scale-105 ${
                         participateInPrediction
-                          ? "bg-green-500 text-white shadow-lg"
-                          : "bg-white text-gray-700 shadow-sm hover:shadow-md"
+                          ? "bg-green-500 hover:bg-green-600 text-white shadow-lg"
+                          : "bg-white hover:bg-green-600 text-gray-700 shadow-sm hover:shadow-md"
                       }`}
                     >
                       <Check className="w-5 h-5" />
@@ -375,7 +437,7 @@ console.log("FoundEvent",foundEvent)
                       className={`flex items-center justify-center gap-2 px-2 cursor-pointer py-2 rounded-xl transition-all transform hover:scale-105 ${
                         !participateInPrediction
                           ? "bg-red-500 text-white shadow-lg"
-                          : "bg-white text-gray-700 shadow-sm hover:shadow-md"
+                          : "bg-white hover:bg-red-600 text-gray-700 shadow-sm hover:shadow-md"
                       }`}
                     >
                       <X className="w-5 h-5" />
@@ -442,13 +504,25 @@ console.log("FoundEvent",foundEvent)
                             <div className="p-3 bg-gradient-to-r from-green-500 to-cyan-600 rounded-lg">
                                 <GiPodiumWinner className="text-white text-xl" />
                             </div>
-                            <p className="text-gray-400 text-left">If your prediction is correct, you get your full insurance and win 5FLR.</p>
+                            <p className="text-gray-400 text-left">If your prediction is correct, you get your full insurance and win 2FLR.</p>
                         </div>
                         <div className="flex items-center gap-3">
                             <div className="p-3 bg-gradient-to-r from-green-500 to-cyan-600 rounded-lg">
                                 <RiCreativeCommonsZeroFill className="text-white text-xl" />
                             </div>
                             <p className="text-gray-400 text-left">If your prediction is wrong, you lose 50% of your insurance.</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-gradient-to-r from-green-500 to-cyan-600 rounded-lg">
+                                <FaFantasyFlightGames className="text-white text-xl" />
+                            </div>
+                            <p className="text-gray-400 text-left">You have an option of getting your insurance in either USDT or FLR Tokens.</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-gradient-to-r from-green-500 to-cyan-600 rounded-lg">
+                                <FaFantasyFlightGames className="text-white text-xl" />
+                            </div>
+                            <p className="text-gray-400 text-left">If we have insufficent USDT Tokens. Your Insurance will be paid in FLR Tokens.</p>
                         </div>
                     </div>
                 </div>

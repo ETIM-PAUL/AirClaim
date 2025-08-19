@@ -1,6 +1,7 @@
 import { format, formatRelative, isToday } from 'date-fns';
 import { enUS } from 'date-fns/locale';
-export const insuredFlightsAgencyAddress = "0x4De616A56362f3C5a043345fa3dEe0384D8b35B8";
+export const insuredFlightsAgencyAddress = "0xC2D48d699F69e8E840a5773bc6C3f765466F73D8";
+export const usdtAddress = "0x7CeB76EDd5fB3c9D1190a8407640A22020175B69";
   
   export const shortenAddress = (address: string): string => {
       if (!address || address.length < 10) return address; // Handle invalid or short addresses
@@ -167,3 +168,50 @@ export function timeAgo(timestamp:string) {
   if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`;
   return `${Math.floor(diffInSeconds / 2592000)} months ago`;
 }
+
+export const FTSOV2_ABI = [
+  {
+    "inputs": [{"internalType": "address", "name": "_addressUpdater", "type": "address"}],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "FTSO_PROTOCOL_ID",
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "bytes21", "name": "_feedId", "type": "bytes21"}],
+    "name": "getFeedById",
+    "outputs": [
+      {"internalType": "uint256", "name": "", "type": "uint256"},
+      {"internalType": "int8", "name": "", "type": "int8"},
+      {"internalType": "uint64", "name": "", "type": "uint64"}
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "bytes21[]", "name": "_feedIds", "type": "bytes21[]"}],
+    "name": "getFeedsById",
+    "outputs": [
+      {"internalType": "uint256[]", "name": "", "type": "uint256[]"},
+      {"internalType": "int8[]", "name": "", "type": "int8[]"},
+      {"internalType": "uint64", "name": "", "type": "uint64"}
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "bytes21", "name": "_feedId", "type": "bytes21"}],
+    "name": "getFeedByIdInWei",
+    "outputs": [
+      {"internalType": "uint256", "name": "_value", "type": "uint256"},
+      {"internalType": "uint64", "name": "_timestamp", "type": "uint64"}
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  }
+];

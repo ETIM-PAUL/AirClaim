@@ -10,6 +10,7 @@ interface GeneralContextType {
   setIsSidebarCollapsed: (collapsed: boolean) => void;
   allFlights: any;
   allClaims: any;
+  allPassengers: any;
   fetchInsuredFlights: any;
   setAllFlights: (flights: []) => void;
 }
@@ -20,6 +21,7 @@ export const GeneralProvider = ({ children }: { children: React.ReactNode }) => 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [allFlights, setAllFlights] = useState([]) as any;
   const [allClaims, setAllClaims] = useState([]);
+  const [allPassengers, setAllPassengers] = useState([]);
   const [loadingFlights, setLoadingFlights] = useState(false);
 
 
@@ -37,6 +39,8 @@ export const GeneralProvider = ({ children }: { children: React.ReactNode }) => 
         
         const count = await contract.getInsuredFlightsCount();
         const flightsArray:any = [];
+        const flightPassengers = await contract.getFlightPassengers();
+        setAllPassengers(flightPassengers)
         // 2. loop through all
         for (let i = 1; i <= Number(count); i++) {
           const flight = await contract.getInsureFlight(i);
@@ -51,6 +55,7 @@ export const GeneralProvider = ({ children }: { children: React.ReactNode }) => 
             flightDelayedTime: flight[5].toString(),
             flightNumber: flight[6],
             passengers: flight[7].toString(),
+            allPassengers: flightPassengers.filter((item:any) => Number(item[3]) === Number(i)),
             flightStatus: flight[8],
             lastChecked: timeAgo(flight[9].toString()),
             insurer: flight[10],
@@ -92,6 +97,7 @@ export const GeneralProvider = ({ children }: { children: React.ReactNode }) => 
             time: timeAgo(claim[1]),
             color: colors[i],
             insuree: claim[2],
+            insuranceId: claim[3],
             playedPrediction: false,
             wonPrediction: false,
           })
@@ -110,7 +116,7 @@ export const GeneralProvider = ({ children }: { children: React.ReactNode }) => 
       }, []);
     
   return (
-    <GeneralContext.Provider value={{ isSidebarCollapsed, setIsSidebarCollapsed, allFlights, allClaims, setAllFlights, fetchInsuredFlights, loadingFlights }}>
+    <GeneralContext.Provider value={{ isSidebarCollapsed, setIsSidebarCollapsed, allFlights, allPassengers, allClaims, setAllFlights, fetchInsuredFlights, loadingFlights }}>
       {children}
     </GeneralContext.Provider>
   );
