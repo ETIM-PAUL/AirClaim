@@ -45,7 +45,7 @@ const FlightsOverviewPage = () => {
 
         <div className="flex md:flex-wrap gap-6">
           {allFlights.map((flight:any) => (
-            <div key={flight.id} className="bg-[#101112] grow w-full md:max-w-md rounded-2xl p-6 shadow-xl transition-transform hover:scale-[1.01]">
+            <div key={flight.id} className="bg-[#101112] grow w-full md:max-w-sm rounded-2xl p-6 shadow-xl transition-transform hover:scale-[1.01]">
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-10 h-10 rounded-full bg-gray-300 flex justify-center items-center">
                   <span className="font-bold">{flight.aircraftIcao}</span>

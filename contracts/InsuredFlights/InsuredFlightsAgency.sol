@@ -159,6 +159,7 @@ contract insuredFlightsAgency {
 
         // Calculate and store flight price
         for (uint256 i = 0; i < passengers.length; i++) {
+            passengers[i].insuredFlightId = currentId;
             _insuranceFlightPassengers.push(passengers[i]);
             insuredFlightPassengersStatus[currentId][passengers[i].wallet] = true;
             _totalAmountInsurance += (passengers[i].ticketPrice * 10) / 100;

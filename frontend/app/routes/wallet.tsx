@@ -178,7 +178,7 @@ const MyWallet = () => {
                                 </div>
                                 <div>
                                   <div className="flex items-center gap-1">
-                                    <div className="text-lg font-semibold bg-gradient-to-r from-green-600 to-emerald-500 bg-clip-text text-transparent">{wFlrBalance}</div>
+                                    <div className="text-lg font-semibold bg-gradient-to-r from-green-600 to-emerald-500 bg-clip-text text-transparent">10.0</div>
                                     <div className="text-sm hidden text-gray-600">USDT</div>
                                   </div>
                                   <div className="text-sm text-gray-600">USDT</div>

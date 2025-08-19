@@ -1,6 +1,6 @@
 import { format, formatRelative, isToday } from 'date-fns';
 import { enUS } from 'date-fns/locale';
-export const insuredFlightsAgencyAddress = "0xC2D48d699F69e8E840a5773bc6C3f765466F73D8";
+export const insuredFlightsAgencyAddress = "0xbF0140a3C43f4fC6c3eC9C39645f7E190FD88dEb";
 export const usdtAddress = "0x7CeB76EDd5fB3c9D1190a8407640A22020175B69";
   
   export const shortenAddress = (address: string): string => {

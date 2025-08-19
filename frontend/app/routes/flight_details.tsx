@@ -107,6 +107,7 @@ const FlightDetailsPage = () => {
       toast.error("ooops, not a passenger on this flight");
       return;
     }
+    console.log(i)
     try {
       setProcessing(true);
       const provider = new ethers.BrowserProvider(window.ethereum as any);

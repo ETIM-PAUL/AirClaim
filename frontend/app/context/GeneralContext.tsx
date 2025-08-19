@@ -84,8 +84,10 @@ export const GeneralProvider = ({ children }: { children: React.ReactNode }) => 
         return;
         }
         // 2. loop through all
-        for (let i = 1; i <= Number(count); i++) {
-          const claim = await contract.getInsuranceClaim(i);
+        for (let i = 0; i <= Number(count); i++) {
+          const claim = await contract._insuranceClaims(i);
+        console.log(claim)
+
           flightClaims.push({
             id: i,
             type: res?.find((item:any) => Number(item?.id) === Number(claim[3]))?.airline,
@@ -98,12 +100,12 @@ export const GeneralProvider = ({ children }: { children: React.ReactNode }) => 
             color: colors[i],
             insuree: claim[2],
             insuranceId: claim[3],
-            playedPrediction: false,
-            wonPrediction: false,
+            playedPrediction: claim[4],
+            wonPrediction: claim[5],
           })
         }
         console.log("flightClaims",flightClaims)
-        setAllClaims(flightClaims)
+        setAllClaims(flightClaims.slice(0, -1))
       } catch (error:any) {
         console.error("Error fetching paginated flights:", error);
         toast.error(error.reason || error.message)
