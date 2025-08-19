@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppKitProvider, useAppKitAccount } from "@reown/appkit/react";
 import { GiMissileLauncher, GiSubmarineMissile } from 'react-icons/gi';
+import { CgClose } from 'react-icons/cg';
 import { TbDroneOff } from 'react-icons/tb';
 import { toast } from 'react-toastify';
 import Sidebar from '~/components/Sidebar';
@@ -143,17 +144,22 @@ const ZombieBattleship = () => {
             });
 
             setTimeout(() => {
-                setExplodingBox(NaN);
                 setIsAttacking(false);
-                setRefetch(true)
+                setRefetch(true);
+                setSelectedBox(NaN)
+                setZombieGrid(Array(16).fill(true));
+                setExplodingBox(NaN);
+                setTargetBox(NaN);
             }, 1500);
         } else toast.error("Unable to fetch battle result")
         
     } catch (error) {
         console.error(error)
         toast.error("Failed to drop drone");
-        setExplodingBox(NaN);
         setIsAttacking(false);
+        setZombieGrid(Array(16).fill(true));
+        setExplodingBox(NaN);
+        setTargetBox(NaN);
     }
   };
 
@@ -265,7 +271,15 @@ const ZombieBattleship = () => {
             {/* Game Result */}
             {gameResult && (
                 <div className={`bg-gray-800 rounded-lg p-6 border border-gray-700 ${gameResult.isHit ? 'border-green-500' : 'border-red-500'}`}>
+                <div className="flex justify-between mb-4">
                 <h3 className="text-lg font-semibold mb-2">Battle Result</h3>
+                <button
+                    onClick={() => setGameResult(null)}
+                    className="border border-white rounded-md cursor-pointer px-2 mb-2"
+                >
+                    <span><CgClose/></span>
+                </button>
+                </div>
                 <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                     <span>Your Prediction:</span>
