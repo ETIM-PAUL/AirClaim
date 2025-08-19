@@ -12,7 +12,7 @@ import { BattleShipInstance } from "../../../typechain-types"
 import { formatLocalized } from '~/utils';
 import { fromUnixTime } from 'date-fns';
 
-const BATTLE_SHIP_ADDRESS = "0x13E9EBB6d4697EE517e2f4201cC12e4dBF0a079a"
+const BATTLE_SHIP_ADDRESS = "0x50BD8dA3C2d17762bc18B4Bf3f77fd79CFa60c1C"
 
 interface RecentBattle {
     prediction: string
