@@ -97,7 +97,9 @@ contract BattleShip {
     }
 
     function claimWins(uint256 amount) public {
+      require(amount > 0, "INVALID_AMOUNT");
       require(unpaid_wins[msg.sender] > 0, "NO_PAYOUT_FUNDS_OWED");
+      require(amount <= unpaid_wins[msg.sender], "AMOUNT_EXCEEDS_UNPAID");
       if (address(this).balance < amount) {
         revert("PAYOUT_FUNDS_UNAVAILABLE");
       } else {
