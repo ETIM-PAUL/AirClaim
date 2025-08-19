@@ -31,7 +31,6 @@ contract BattleShip {
       _;
     }
 
-    event RandomNumberNotSecure();
     event BattleWinSaved(address player, uint16 prediction, uint16 target, uint256 prize);
     event DroneDropped(
       address player,
@@ -74,7 +73,7 @@ contract BattleShip {
         require(msg.value > 0, "ZERO_VALUE");
         require(msg.value <= MAX_DROP_AMOUNT, "MAX_DROP_EXCEEDED");
         (uint256 randomNumber, bool isSecure,) = randomV2.getRandomNumber();
-        if (!isSecure) emit RandomNumberNotSecure();
+        require(isSecure, "RNG_NOT_SECURE");
 
         randomNumber %= MAX_DROPS;
         uint16 target = uint16(randomNumber);
