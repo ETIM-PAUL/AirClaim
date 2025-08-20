@@ -1,50 +1,166 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useAppKitProvider, useAppKitAccount } from "@reown/appkit/react";
+import { ethers, Contract, BrowserProvider, BigNumberish, formatEther, parseEther } from 'ethers';
+import { toast } from 'react-toastify';
 import Sidebar from '~/components/Sidebar';
 import { useGeneral } from '~/context/GeneralContext';
+import { abi as LUCKY_SPIN_ABI } from "../../../artifacts/contracts/LuckySpin/LuckySpin.sol/LuckySpin.json"
+import { LuckySpinInstance } from "../../../typechain-types"
+import { formatLocalized } from '~/utils';
+import { fromUnixTime } from 'date-fns';
+
+const LUCKY_SPIN_ADDRESS = "0xF1AEE73B4E61D6F4B165D1C42062C5b59Bb7e221"
+interface RouletteSpins {
+  predictions: string[]
+  targets: string[]
+  matches: string
+  amount?: string
+  result: string
+  prize: string
+  time: string
+}
 
 const LuckySpinGame = () => {
   const { isSidebarCollapsed } = useGeneral();
-  const [numbers, setNumbers] = useState(['', '', '', '', '']);
+  const [numbers, setNumbers] = useState<number[]>(Array(5).fill(''));
   const [stakeAmount, setStakeAmount] = useState(5);
   const [isSpinning, setIsSpinning] = useState(false);
-  const [currentResult, setCurrentResult] = useState(['--', '--', '--', '--', '--']);
+  // const [currentResult, setCurrentResult] = useState(['--', '--', '--', '--', '--']);
   const [wheelRotation, setWheelRotation] = useState(0);
-  const [recentSpins] = useState([
-    { time: 'Today, 14:32', numbers: [13, 7, 14, 8, 2], matches: 3, prize: '+20 FLR' },
-    { time: 'Today, 14:25', numbers: [7, 19, 3, 11, 5], matches: 1, prize: '-5 FLR' },
-    { time: 'Today, 14:18', numbers: [12, 1, 7, 16, 8], matches: 0, prize: '-5 FLR' }
-  ]);
+  const [recentSpins, setRecentSpins] = useState<RouletteSpins[]>([]);
+  const [spinResult, setSpinResult] = useState<RouletteSpins>();
+  const [isFetching, setIsFetching] = useState(false);
+  const [refetch, setRefetch] = useState(false);
+
+  const { address } = useAppKitAccount()
+  const { walletProvider } = useAppKitProvider("eip155")
+  
+  useEffect(() => {
+    fetchUserRecentSpins()
+  }, [address, refetch])
+
+  function transformToSpinData(data: any[]) {
+    console.log('unwrapped', data)
+    if (typeof data[0] === 'string' && data[0].startsWith('0x')) {
+      const timestamp = fromUnixTime(Number(data[6]))
+      const stake = formatEther(data[4])
+      return {
+          predictions: data[1].toString().split(','),
+          targets: data[2].toString().split(','),
+          matches: data[3].toString(),
+          result: data[4].toString() === '0' ? 'HIT' : 'MISS',
+          prize: data[5].toString() === '0' ? `-${stake} FLR` : `+${formatEther(data[5])} FLR`,
+          time: formatLocalized(timestamp),
+      }
+    } else {
+      const timestamp = fromUnixTime(Number(data[6]))
+      const stake = formatEther(data[4])
+      return {
+          predictions: data[0].toString().split(','),
+          targets: data[1].toString().split(','),
+          matches: data[2].toString(),
+          result: data[3].toString() === '0' ? 'HIT' : 'MISS',
+          prize: data[5].toString() === '0' ? `-${stake} FLR` : `+${formatEther(data[5])} FLR`,
+          time: formatLocalized(timestamp),
+      }
+
+    }
+  }
+  function deepUnwrapProxyResult(value: any): any {
+      if (Array.isArray(value)) {
+        return value.map((v: any) => deepUnwrapProxyResult(v));
+      }
+      // BigInt, number, string, etc.
+      if (typeof value !== 'object' || value === null) {
+        return value;
+      }
+      // Try shallow clone of object
+      const clone: any = {};
+      for (const key of Reflect.ownKeys(value)) {
+        clone[key] = deepUnwrapProxyResult(value[key]);
+      }
+      return clone;
+  }
+  async function fetchUserRecentSpins() {
+    
+    try {
+        const provider = new ethers.BrowserProvider(walletProvider as any);
+        const Roulette: LuckySpinInstance = new Contract(LUCKY_SPIN_ADDRESS, LUCKY_SPIN_ABI, provider)
+        setIsFetching(true)
+        const result = await Roulette.getUserSpins(address)
+        const wrappedResult = deepUnwrapProxyResult(result)
+        const recentSpins = wrappedResult.map(transformToSpinData)
+        console.log("roulette spins", result, "wrapped", wrappedResult, "transformed", recentSpins)
+        // console.log("user recent spins", recentSpins)
+        setRecentSpins(recentSpins)
+        setIsFetching(false)
+    } catch (error) {
+        console.error('Error fetching user recent spins', error)
+        setIsFetching(false)
+    }
+  }
 
   // Roulette numbers in order (simplified version)
   const rouletteNumbers = [
-    0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5,
-    24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26
+    0, 12, 15, 19, 4, 11, 2, 15, 17, 14, 6, 17, 13, 16, 11, 20, 8, 13, 10, 5,
+    14, 16, 3, 1, 20, 14, 11, 9, 12, 18, 19, 7, 18, 12, 15, 3, 16
   ];
 
   const generateRandomNumbers = () => {
     const newNumbers = Array(5).fill(0).map(() => Math.floor(Math.random() * 20) + 1);
-    setNumbers(newNumbers.map(n => n.toString()));
+    setNumbers(newNumbers.map(n => n));
   };
 
   const clearAll = () => {
-    setNumbers(['', '', '', '', '']);
-    setCurrentResult(['--', '--', '--', '--', '--']);
+    setNumbers([]);
+    // setCurrentResult(['--', '--', '--', '--', '--']);
+    setSpinResult(undefined);
   };
 
-  const spinWheel = () => {
-    if (isSpinning) return;
+  const spinWheel = async () => {
+    try {
+        if (stakeAmount > 2 || stakeAmount < 1) {
+         toast.error("Stake amount must be between 1-2")
+         return;
+        } 
+        if (numbers.length === 0) {
+          toast.error("Pick some numbers chief!")
+          return;
+        }
+        
+        setIsSpinning(true);
+        const spins = Math.floor(Math.random() * 5) + 5; // 3-7 full rotations
+        const finalRotation = wheelRotation + (spins * 360) + Math.floor(Math.random() * 360);
+        setWheelRotation(finalRotation);
+        const ethersProvider = new BrowserProvider(walletProvider as any)
+        const signer = await ethersProvider.getSigner()
+        const Roulette: LuckySpinInstance = new Contract(LUCKY_SPIN_ADDRESS, LUCKY_SPIN_ABI, signer)
+        const stakeAmountEth = parseEther(stakeAmount.toString())
+        const tx = await Roulette.luckySpin(numbers, {value: stakeAmountEth})
+        const receipt = await tx.wait();
     
-    setIsSpinning(true);
-    const spins = Math.floor(Math.random() * 5) + 3; // 3-7 full rotations
-    const finalRotation = wheelRotation + (spins * 360) + Math.floor(Math.random() * 360);
-    setWheelRotation(finalRotation);
-
-    // Generate random results after spin
-    setTimeout(() => {
-      const results = Array(5).fill(0).map(() => Math.floor(Math.random() * 20) + 1);
-      setCurrentResult(results.map(n => n.toString()));
-      setIsSpinning(false);
-    }, 3000);
+        // Filter logs for your event
+        const eventTopic = Roulette.interface.getEvent("Spin").topicHash;
+        const log = receipt.logs.find((l: any) => l.topics[0] === eventTopic);
+        // console.log('event topic', eventTopic, 'log', log)
+        if (log) {
+            const parsed = Roulette.interface.parseLog(log);
+            const logArgs = parsed.args;
+            console.log("log args", logArgs)
+            const wrappedResult = deepUnwrapProxyResult(logArgs)
+            console.log("wrappedResult", wrappedResult)
+            const spinResult = transformToSpinData(wrappedResult)
+            console.log("spin result", spinResult)
+            setSpinResult(spinResult)
+            setIsSpinning(false);
+            setRefetch(true);
+        } else toast.error("Unable to fetch spin result")
+        
+    } catch (error) {
+        console.error(error)
+        toast.error("Failed to spin wheel. Try again!");
+        setIsSpinning(false);
+    }
   };
 
   return (
@@ -91,7 +207,7 @@ const LuckySpinGame = () => {
                       value={num}
                       onChange={(e) => {
                         const newNumbers = [...numbers];
-                        newNumbers[index] = e.target.value;
+                        newNumbers[index] = Number(e.target.value);
                         setNumbers(newNumbers);
                       }}
                       className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-center text-sm focus:border-green-400 focus:outline-none"
@@ -138,24 +254,50 @@ const LuckySpinGame = () => {
             {/* Recent Spins */}
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
               <h3 className="text-lg font-semibold mb-4">Your Recent Spins</h3>
-              <div className="space-y-1">
-                <div className="grid grid-cols-4 gap-4 text-xs text-gray-400 pb-2 border-b border-gray-700">
-                  <span>Time</span>
-                  <span>Your Numbers</span>
-                  <span>Result</span>
-                  <span>Prize</span>
-                </div>
-                {recentSpins.map((spin, index) => (
-                  <div key={index} className="grid grid-cols-4 gap-4 text-sm py-2">
-                    <span className="text-gray-300">{spin.time}</span>
-                    <span className="text-gray-300">{spin.numbers.join(', ')}</span>
-                    <span className="text-gray-300">{spin.matches} matches</span>
-                    <span className={spin.prize.startsWith('+') ? 'text-green-400' : 'text-red-400'}>
-                      {spin.prize}
-                    </span>
+              {!isFetching && recentSpins.length === 0 && (
+                  <div className="space-y-1 flex flex-col items-center">
+                      <p className="text-sm text-gray-400">No spins yet</p>
                   </div>
-                ))}
-              </div>
+              )}
+              {!isFetching && recentSpins.length > 0 && (
+                <div className="space-y-1">
+                  <div className="grid grid-cols-4 gap-4 text-xs text-gray-400 pb-2 border-b border-gray-700">
+                    <span>Time</span>
+                    <span>Your Numbers</span>
+                    <span>Result</span>
+                    <span>Prize</span>
+                  </div>
+                  {recentSpins.reverse().map((spin, index) => (
+                    <div key={index} className="grid grid-cols-4 gap-4 text-sm py-2">
+                      <span className="text-gray-300">{spin.time}</span>
+                      <span className="text-gray-300">{spin.predictions.join(', ')}</span>
+                      <span className="text-gray-300">{spin.matches} matches</span>
+                      <span className={spin.prize.startsWith('+') ? 'text-green-400' : 'text-red-400'}>
+                        {spin.prize}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {isFetching && recentSpins.length === 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between">
+                  <div className="h-4 w-16 bg-white animate-pulse rounded-md" />
+                  <div className="h-4 w-8 bg-white animate-pulse rounded-md" />
+                  </div>
+                  <div className="h-2 w-full bg-white animate-pulse rounded-md" />
+                  <div className="h-2 w-1/4 bg-white animate-pulse rounded-md" />
+                  <div className="space-y-2">
+                  <div className="h-2 w-full bg-white animate-pulse rounded-md" />
+                  <div className="h-2 w-full bg-white animate-pulse rounded-md" />
+                  <div className="h-2 w-full bg-white animate-pulse rounded-md" />
+                  </div>
+                  <div className="flex items-center justify-between">
+                  <div className="h-2 w-8 bg-white animate-pulse rounded-md" />
+                  <div className="h-6 w-10 bg-white animate-pulse rounded-md" />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -205,16 +347,31 @@ const LuckySpinGame = () => {
             {/* Current Result */}
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
               <div className="grid grid-cols-5 gap-3 mb-4">
-                {currentResult.map((result, index) => (
+                {spinResult?.targets.map((target, index) => (
                   <div key={index} className="bg-gray-700 border border-gray-600 rounded py-3 px-2 text-center font-mono text-lg">
-                    {result}
+                    {target}
                   </div>
                 ))}
-              </div>
-              
+              </div>            
               <div className="text-center">
                 <h3 className="text-lg font-semibold mb-2">Current Spin Result</h3>
                 <p className="text-gray-400 text-sm">Spin the wheel to see the result</p>
+              </div>
+              <div className="space-y-2 text-sm mt-2">
+                  <div className="flex justify-between">
+                  <span>Your Predictions:</span>
+                  <span className="font-bold">{spinResult?.predictions.join(', ')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                  <span>Matches:</span>
+                  <span>{spinResult?.matches}</span>
+                  </div>
+                  {/* <div className="flex justify-between">
+                  <span>Prize:</span>
+                  <span className={`font-bold ${spinResult?.prize.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>
+                      {spinResult?.prize}
+                  </span>
+                  </div> */}
               </div>
             </div>
 
@@ -264,4 +421,3 @@ const LuckySpinGame = () => {
 };
 
 export default LuckySpinGame;
-5057251723
