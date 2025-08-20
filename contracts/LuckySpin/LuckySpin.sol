@@ -13,12 +13,14 @@ contract LuckySpin {
     struct Spins {
       uint16[] predictions;
       uint16[] targets;
+      uint16 matches;
       SpinResult result;
+      uint256 amount;
       uint256 prize;
       uint256 timestamp;
     }
     uint256 public constant MAX_STAKE_AMOUNT = 2 ether;
-    uint256 public constant MAX_NUM_PER_SPIN = 15;
+    uint256 public constant MAX_NUM_PER_SPIN = 20;
     uint256 public constant MAX_PREDICTIONS = 5;
     mapping(address => Spins[]) public userSpins;
     mapping(address => uint256) public unpaidWins;
@@ -32,12 +34,12 @@ contract LuckySpin {
       _;
     }
 
-    event RandomNumberNotSecure();
     event SpinWinSaved(address player, uint16[] predictions, uint16[] targets, uint256 prize);
     event Spin(
       address player,
       uint16[] predictions,
       uint16[] targets,
+      uint16 matches,
       uint8 result,
       uint256 prize,
       uint256 timestamp
@@ -91,7 +93,7 @@ contract LuckySpin {
             uint256 expanded = uint256(
               keccak256(abi.encode(seed, i, j, msg.sender, block.number))
             );
-            uint16 candidate = uint16((expanded % MAX_NUM_PER_SPIN) + 1); // 1..15
+            uint16 candidate = uint16((expanded % MAX_NUM_PER_SPIN) + 1); // 1..MAX_NUM_PER_SPIN
             uint32 bit = uint32(1) << candidate;
             if ((usedMask & bit) == 0) {
               usedMask |= bit;
@@ -120,11 +122,11 @@ contract LuckySpin {
         uint256 payout;
         if (matchCount >= 3) {
           if (matchCount == 3) {
-            payout = (msg.value * 50) / 100; // 0.5x
+            payout = (msg.value * 150) / 100; // +50%
           } else if (matchCount == 4) {
-            payout = msg.value; // 1x
+            payout = msg.value << 1; // +100%
           } else {
-            payout = msg.value * 2; // 2x for 5 matches
+            payout = (msg.value * 250) / 100; // +150% for 5 matches
           }
         }
 
@@ -143,12 +145,14 @@ contract LuckySpin {
         Spins memory spin = Spins({
           predictions: predictions,
           targets: targets,
+          matches: matchCount,
           result: result,
+          amount: msg.value,
           prize: payout,
           timestamp: block.timestamp
         });
         userSpins[msg.sender].push(spin);
-        emit Spin(msg.sender, predictions, targets, uint8(result), payout, block.timestamp);
+        emit Spin(msg.sender, predictions, targets, matchCount, uint8(result), payout, block.timestamp);
     }
 
     function claimWins(uint256 amount) public {

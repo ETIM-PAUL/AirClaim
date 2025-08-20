@@ -14,6 +14,7 @@ contract BattleShip {
       uint16 prediction;
       uint16 target;
       DroneDropResult result;
+      uint256 amount;
       uint256 prize;
       uint256 timestamp;
     }
@@ -115,7 +116,7 @@ contract BattleShip {
             prize = 0;
         }
 
-        DroneBattle memory battle = DroneBattle(prediction, target, result, prize, block.timestamp);
+        DroneBattle memory battle = DroneBattle(prediction, target, result, msg.value, prize, block.timestamp);
         userDroneBattles[msg.sender].push(battle);
         emit DroneDropped(msg.sender, prediction, target, uint8(result), prize, block.timestamp);
     }

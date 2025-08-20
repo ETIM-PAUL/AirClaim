@@ -12,7 +12,7 @@ import { BattleShipInstance } from "../../../typechain-types"
 import { formatLocalized } from '~/utils';
 import { fromUnixTime } from 'date-fns';
 
-const BATTLE_SHIP_ADDRESS = "0x50BD8dA3C2d17762bc18B4Bf3f77fd79CFa60c1C"
+const BATTLE_SHIP_ADDRESS = "0x538092c98dEA9Ba44EBfB2B9337Fe49a25b46A5c"
 
 interface RecentBattle {
     prediction: string
@@ -35,7 +35,7 @@ const ZombieBattleship = () => {
   const [zombieGrid, setZombieGrid] = useState(Array(16).fill(true)); // true means zombie alive
   const [recentBattles, setRecentBattles] = useState<RecentBattle[]>([]);
 
-  const { address, isConnected } = useAppKitAccount()
+  const { address } = useAppKitAccount()
   const { walletProvider } = useAppKitProvider("eip155")
   
   useEffect(() => {
@@ -44,13 +44,14 @@ const ZombieBattleship = () => {
 
   async function fetchUserRecentBattles() {
     function transformBattleData(data: BigNumberish[]) {
-        const timestamp = fromUnixTime(Number(data[4]))
+        const timestamp = fromUnixTime(Number(data[5]))
+        const stake = formatEther(data[3])
         return {
             prediction: data[0].toString(),
             target: data[1].toString(),
             result: data[2].toString() === '0' ? 'HIT' : 'MISS',
             time: formatLocalized(timestamp),
-            prize: data[2].toString() === '0' ? `+${formatEther(data[3])} FLR` : `-${formatEther(data[3])} FLR`
+            prize: data[4].toString() === '0' ? `-${stake} FLR` : `+${formatEther(data[4])} FLR`
         }
     }
     function deepUnwrap(value: any): any {
