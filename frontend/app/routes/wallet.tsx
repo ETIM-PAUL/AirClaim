@@ -5,7 +5,7 @@ import Sidebar from '~/components/Sidebar';
 import { useGeneral } from "../context/GeneralContext";
 import { ethers } from 'ethers';
 import GetWFLRModal from '~/components/WFlr';
-import FLRToUSDTModal from '~/components/FlrToUsdt';
+import WFLRToFLRModal from '~/components/WflrToFlr';
 
 const MyWallet = () => {
   const { address, isConnected } = useAppKitAccount(); // Use reown's wallet hooks
@@ -13,9 +13,10 @@ const MyWallet = () => {
   const { disconnect } = useDisconnect();
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [balance, setBalance] = useState<any>(0);
-  const [wFlrBalance, setWFlrBalance] = useState<any>(0);
   const [showGetWFLRModal, setShowGetWFLRModal] = useState<boolean>(false);
-  const [showGetUsdtModal, setShowGetUsdtModal] = useState<boolean>(false);
+  const [wFlrBalance, setWFlrBalance] = useState<any>(0);
+  const [usdtBalance, setUsdtBalance] = useState<any>(0);
+  const [showGetFlrModal, setShowGetFlrModal] = useState<boolean>(false);
   const { isSidebarCollapsed } = useGeneral();
  
 
@@ -45,22 +46,31 @@ const MyWallet = () => {
     "function decimals() view returns (uint8)",
   ];
 
-  async function fetchWFLRBalance() {
+  async function fetchTokensBalance() {
     const tokenAddress = "0xC67DCE33D7A8efA5FfEB961899C73fe01bCe9273";
+    const usdtAddress = "0x7CeB76EDd5fB3c9D1190a8407640A22020175B69";
     try {
       const provider = new ethers.BrowserProvider(window.ethereum as any)
       // Create contract instance
       const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+      const usdtContract = new ethers.Contract(usdtAddress, ERC20_ABI, provider);
       
       // Fetch token info and balance in parallel
       const [balance, decimals] = await Promise.all([
         tokenContract.balanceOf(address),
         tokenContract.decimals()
       ]);
+      const [_usdtBalance, _usdtdecimals] = await Promise.all([
+        usdtContract.balanceOf(address),
+        usdtContract.decimals()
+      ]);
       
       // Format balance from wei to human readable
       const formattedBalance = ethers.formatUnits(balance, decimals);
+      const formattedUsdtBalance = ethers.formatUnits(_usdtBalance, _usdtdecimals);
+      console.log(formattedUsdtBalance)
       setWFlrBalance(formattedBalance)
+      setUsdtBalance(formattedUsdtBalance)
       
     } catch (error:any) {
       console.error('Error fetching ERC20 balance:', error);
@@ -78,7 +88,7 @@ const MyWallet = () => {
   useEffect(() => {
     if (isConnected) {
       getBalance();
-      fetchWFLRBalance();
+      fetchTokensBalance();
       }
   }, [address, isConnected]);
 
@@ -141,7 +151,7 @@ const MyWallet = () => {
                               <button onClick={()=>setShowGetWFLRModal(true)} className='cursor-pointer'>Get WFLR</button>
                             </div>
                             <div className='bg-white hidden p-2 text-xs cursor-pointer w-fit rounded-md'>
-                              <button onClick={()=>setShowGetUsdtModal(true)} className='cursor-pointer text-black'>Convert USDT</button>
+                              <button onClick={()=>setShowGetFlrModal(true)} className='cursor-pointer text-black'>Convert USDT</button>
                             </div>
                           </div>
                         </div>
@@ -153,7 +163,7 @@ const MyWallet = () => {
                         <h3 className="text-lg font-semibold text-gray-800 mb-4">Other Token Balances</h3>
                         
                         <div className='flex gap-2'>
-                          <div className="">
+                          <div className="max-w-lg">
                               <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-gray-200">
                                 <div className="flex items-center gap-2">
                                 <div className="w-14 h-14 p-2 rounded-full bg-green-300 flex justify-center items-center">
@@ -164,13 +174,19 @@ const MyWallet = () => {
                                     <div className="text-lg font-semibold bg-gradient-to-r from-green-600 to-emerald-500 bg-clip-text text-transparent">{wFlrBalance}</div>
                                     <div className="text-sm hidden text-gray-600">WFLR</div>
                                   </div>
-                                  <div className="text-sm text-gray-600">Wrapped FLR</div>
+
+                                  <div className='w-full flex items-center gap-2'>
+                                    <div className="text-sm text-gray-600">Wrapped FLR</div>
+                                    <div className='bg-green-400 p-2 text-xs cursor-pointer w-fit rounded-md'>
+                                      <button onClick={()=>setShowGetFlrModal(true)} className='cursor-pointer'>Get FLR</button>
+                                    </div>
+                                  </div>
                                 </div>
                                 </div>
 
                               </div>
                           </div>
-                          <div className="">
+                          <div className="max-w-lg">
                               <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-gray-200">
                                 <div className="flex items-center gap-2">
                                 <div className="w-14 h-14 p-2 rounded-full bg-green-300 flex justify-center items-center">
@@ -178,7 +194,7 @@ const MyWallet = () => {
                                 </div>
                                 <div>
                                   <div className="flex items-center gap-1">
-                                    <div className="text-lg font-semibold bg-gradient-to-r from-green-600 to-emerald-500 bg-clip-text text-transparent">10.0</div>
+                                    <div className="text-lg font-semibold bg-gradient-to-r from-green-600 to-emerald-500 bg-clip-text text-transparent">{usdtBalance}</div>
                                     <div className="text-sm hidden text-gray-600">USDT</div>
                                   </div>
                                   <div className="text-sm text-gray-600">USDT</div>
@@ -203,15 +219,15 @@ const MyWallet = () => {
         isOpen={showGetWFLRModal}
         onClose={() => setShowGetWFLRModal(false)}
         getBalance={getBalance}
-        fetchWFLRBalance={fetchWFLRBalance}
+        fetchWFLRBalance={fetchTokensBalance}
         balance={balance.data?.balance}
       />
-      <FLRToUSDTModal
-        isOpen={showGetUsdtModal}
-        onClose={() => setShowGetUsdtModal(false)}
+      <WFLRToFLRModal
+        isOpen={showGetFlrModal}
+        onClose={() => setShowGetFlrModal(false)}
         getBalance={getBalance}
-        fetchWFLRBalance={fetchWFLRBalance}
-        balance={balance.data?.balance}
+        fetchWFLRBalance={fetchTokensBalance}
+        balance={wFlrBalance}
       />
      
     </div>

@@ -18,9 +18,11 @@ contract BattleShip {
       uint256 timestamp;
     }
     uint256 public constant MAX_DROP_AMOUNT = 2 ether;
-    uint256 public constant MAX_DROPS = 15;
-    mapping(address => DroneBattle[]) public user_drone_battles;
-    mapping(address => uint256) public unpaid_wins;
+    uint256 public constant MAX_DROPS = 15; // domain 0..15 inclusive
+    mapping(address => DroneBattle[]) public userDroneBattles;
+    mapping(address => uint256) public unpaidWins;
+    mapping(address => uint16) private lastTarget;
+    mapping(address => bool) private hasLastTarget;
 
     // uint256 public max_stake_amount;
     // uint256 public max_drops;
@@ -31,8 +33,7 @@ contract BattleShip {
       _;
     }
 
-    event RandomNumberNotSecure();
-    event BattleWinSaved(address player, uint16 prediction, uint16 target, uint256 prize);
+    // Removed BattleWinSaved
     event DroneDropped(
       address player,
       uint16 prediction,
@@ -55,11 +56,11 @@ contract BattleShip {
     }
 
     function getUserDroneBattles(address user) public view returns (DroneBattle[] memory) {
-        return user_drone_battles[user];
+        return userDroneBattles[user];
     }
 
     function getUnpaidWins(address user) public view returns (uint256) {
-        return unpaid_wins[user];
+        return unpaidWins[user];
     }
 
     // function getMaxDropAmount() public view returns (uint256) {
@@ -73,36 +74,60 @@ contract BattleShip {
     function dropDrone(uint16 prediction) public payable {
         require(msg.value > 0, "ZERO_VALUE");
         require(msg.value <= MAX_DROP_AMOUNT, "MAX_DROP_EXCEEDED");
-        (uint256 randomNumber, bool isSecure,) = randomV2.getRandomNumber();
-        if (!isSecure) emit RandomNumberNotSecure();
+        require(prediction <= MAX_DROPS, "PREDICTION_OUT_OF_RANGE"); // 0..15 inclusive
+        (uint256 seed, bool isSecure,) = randomV2.getRandomNumber();
+        require(isSecure, "RNG_NOT_SECURE");
+        uint32 usedMask = 0;
+        if (hasLastTarget[msg.sender]) {
+          usedMask |= (uint32(1) << lastTarget[msg.sender]);
+        }
+        uint256 j = 0;
+        uint16 target;
+        while (true) {
+          uint256 expanded = uint256(
+            keccak256(abi.encode(seed, j, msg.sender, block.number))
+          );
+          uint16 candidate = uint16(expanded % (MAX_DROPS + 1)); // 0..15
+          uint32 bit = uint32(1) << candidate;
+          if ((usedMask & bit) == 0) {
+            target = candidate;
+            break;
+          }
+          j++;
+        }
+        lastTarget[msg.sender] = target;
+        hasLastTarget[msg.sender] = true;
 
-        randomNumber %= MAX_DROPS;
-        uint16 target = uint16(randomNumber);
         DroneDropResult result;
-        uint256 payout = msg.value;
+        uint256 prize; // record winnings; 0 on miss
+
         if (prediction == target) {
             result = DroneDropResult.Hit;
-            payout = msg.value<<1; // double payout
-            if (address(this).balance < payout) {
-                unpaid_wins[msg.sender] += payout;
+            prize = msg.value << 1; // 2x
+            if (address(this).balance < prize) {
+                unpaidWins[msg.sender] += prize;
             } else {
-                (bool success,) = payable(msg.sender).call{value: payout}("");
+                (bool success,) = payable(msg.sender).call{value: prize}("");
                 require(success, "PAYOUT_FAILED");
             }
         } else {
             result = DroneDropResult.Miss;
+            prize = 0;
         }
-        DroneBattle memory battle = DroneBattle(prediction, target, result, payout, block.timestamp);
-        user_drone_battles[msg.sender].push(battle);
-        emit DroneDropped(msg.sender, prediction, target, uint8(result), payout, block.timestamp);
+
+        DroneBattle memory battle = DroneBattle(prediction, target, result, prize, block.timestamp);
+        userDroneBattles[msg.sender].push(battle);
+        emit DroneDropped(msg.sender, prediction, target, uint8(result), prize, block.timestamp);
     }
 
     function claimWins(uint256 amount) public {
-      require(unpaid_wins[msg.sender] > 0, "NO_PAYOUT_FUNDS_OWED");
+      require(amount > 0, "INVALID_AMOUNT");
+      require(unpaidWins[msg.sender] > 0, "NO_PAYOUT_FUNDS_OWED");
+      require(amount <= unpaidWins[msg.sender], "AMOUNT_EXCEEDS_UNPAID");
       if (address(this).balance < amount) {
         revert("PAYOUT_FUNDS_UNAVAILABLE");
       } else {
-        unpaid_wins[msg.sender] -= amount;
+        unpaidWins[msg.sender] -= amount;
         (bool success,) = payable(msg.sender).call{value: amount}("");
         require(success, "PAYOUT_FAILED");
       }

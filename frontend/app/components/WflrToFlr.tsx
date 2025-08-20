@@ -4,7 +4,7 @@ import IWNat from 'IWNat.json';
 import { interfaceToAbi } from "@flarenetwork/flare-periphery-contract-artifacts";
 import { FTSOV2_ABI } from '~/utils';
 
-const FLRToUSDTModal = ({ 
+const WFLRToFLRModal = ({ 
   isOpen, 
   onClose, 
   getBalance,
@@ -78,27 +78,50 @@ const FLRToUSDTModal = ({
     onClose();
   };
 
-  const handleConversion = async (amount:any) => {
-    const FTSOV2_ADDRESS = "0x3d893C53D9e8056135C26C8c638B76C8b60Df726";
-    const FEED_IDS = [
-      "0x01464c522f55534400000000000000000000000000", // FLR/USD
-      "0x014254432f55534400000000000000000000000000", // BTC/USD
-      "0x014554482f55534400000000000000000000000000", // ETH/USD
-    ];
-    setAmount(amount)
+  const handleWithdrawToken = async () => {
+    if (!amount || parseFloat(amount) <= 0) {
+        setError('Please enter a valid amount');
+        return;
+    }
+    
+    if (parseFloat(amount) > parseFloat(balance)) {
+        setError('Insufficient balance');
+        return;
+    }
+    
+    setLoading(true);
+    setError('');
+    
+try {
+  const WNAT_ADDRESS = "0xC67DCE33D7A8efA5FfEB961899C73fe01bCe9273"
+  const provider = new ethers.BrowserProvider(window.ethereum as any);
+  const signer = await provider.getSigner();
+  const contract = new ethers.Contract(WNAT_ADDRESS, IWNat?.abi, signer);
 
-    // ABI for FtsoV2
-
-    const provider = new ethers.BrowserProvider(window.ethereum as any);
-    // Set up contract instance
-    const ftsov2 = new ethers.Contract(FTSOV2_ADDRESS, FTSOV2_ABI, provider);
-    // Fetch current feeds
-    const res = await ftsov2.getFeedsById.staticCall(FEED_IDS);
-    // Log results
-    console.log("Feeds:", res[0]);
-    console.log("Decimals:", res[1]);
-    console.log("Timestamp:", res[2]);
-  };
+  const withdrawAmount = ethers.parseEther(amount).toString();
+  const tx:any = await contract.withdraw(withdrawAmount);
+  await tx.wait();
+  console.log("Withdraw token from WNAT", tx);
+  setTxHash(tx.hash);
+  
+  // Wait for transaction confirmation
+  const receipt = await tx.wait();
+  
+  if (receipt.status === 1) {
+    setSuccess(true);
+    // Refresh token balance
+    await getBalance();
+    await fetchWFLRBalance();
+  } else {
+    throw new Error('Transaction failed');
+  }
+  
+} catch (err:any) {
+  setError(err.reason || 'Transaction failed');
+} finally {
+  setLoading(false);
+}
+};
 
   const setMaxAmount = () => {
     setAmount(balance);
@@ -121,7 +144,7 @@ const FLRToUSDTModal = ({
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">
-              Swap FLR Tokens for USDT Tokens
+              Withdraw WFLR Tokens for FLR Tokens
             </h3>
             <button
               onClick={handleClose}
@@ -166,7 +189,7 @@ const FLRToUSDTModal = ({
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-medium text-gray-700">Token:</span>
-                  <span className="font-semibold text-green-700">Flare Native Token (FLR)</span>
+                  <span className="font-semibold text-green-700">Wrapped Flare Native Token (FLR)</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-gray-700">Available:</span>
@@ -177,13 +200,13 @@ const FLRToUSDTModal = ({
               {/* Amount Input */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Amount to Send
+                  Amount to Withdraw
                 </label>
                 <div className="relative">
                   <input
                     type="number"
                     value={amount}
-                    onChange={(e) => handleConversion(e.target.value)}
+                    onChange={(e) => setAmount(e.target.value)}
                     placeholder="0.00"
                     className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
                     disabled={loading}
@@ -191,7 +214,7 @@ const FLRToUSDTModal = ({
                     min="0"
                   />
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
-                    <span className="text-sm text-gray-500">FLR</span>
+                    <span className="text-sm text-gray-500">WFLR</span>
                     <button
                       onClick={setMaxAmount}
                       className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded transition-colors"
@@ -213,8 +236,8 @@ const FLRToUSDTModal = ({
                     <div className="text-sm">
                       <p className="font-medium text-yellow-800 mb-1">Confirm Transaction</p>
                       <p className="text-yellow-700">
-                        You are about to convert <span className="font-semibold">{amount} FLR </span> to{' '}
-                        <span className="font-bold">USDT</span>
+                        You are about to withdraw <span className="font-semibold">{amount} FLR </span> to{' '}
+                        <span className="font-bold">your account</span>
                       </p>
                     </div>
                   </div>
@@ -255,7 +278,7 @@ const FLRToUSDTModal = ({
                   Cancel
                 </button>
                 <button
-                  onClick={handleSendToken}
+                  onClick={handleWithdrawToken}
                   disabled={loading || !amount || parseFloat(amount) <= 0 || parseFloat(amount) > parseFloat(balance)}
                   className="flex-1 bg-[#9e74eb] text-white py-3 px-4 rounded-lg hover:bg-[#9e74jb] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-medium"
                 >
@@ -277,4 +300,4 @@ const FLRToUSDTModal = ({
   );
 };
 
-export default FLRToUSDTModal;
+export default WFLRToFLRModal;

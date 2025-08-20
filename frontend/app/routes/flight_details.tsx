@@ -107,7 +107,7 @@ const FlightDetailsPage = () => {
       toast.error("ooops, not a passenger on this flight");
       return;
     }
-    console.log(i)
+
     try {
       setProcessing(true);
       const provider = new ethers.BrowserProvider(window.ethereum as any);
@@ -367,7 +367,7 @@ const FlightDetailsPage = () => {
               <tbody className='space-y-2'>
                 {flight.allPassengers.map((passenger: any, idx: any) => (
                   <tr key={idx} className="border-b border-gray-800 hover:bg-gray-900 transition">
-                    <td className='py-3'>{shortenAddress(passenger[0].slice(0, 6))}</td>
+                    <td className='py-3'>{shortenAddress(passenger[0])}</td>
                     <td className='py-3'>{passenger[1]}</td>
                     <td className='py-3'>{ethers.formatEther(passenger.ticketPrice)} FLR</td>
                   </tr>
