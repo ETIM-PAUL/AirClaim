@@ -40,7 +40,6 @@ const LuckySpinGame = () => {
   }, [address, refetch])
 
   function transformToSpinData(data: any[]) {
-    console.log('unwrapped', data)
     if (typeof data[0] === 'string' && data[0].startsWith('0x')) {
       const timestamp = fromUnixTime(Number(data[6]))
       const stake = formatEther(data[4])
@@ -84,7 +83,7 @@ const LuckySpinGame = () => {
   async function fetchUserRecentSpins() {
     
     try {
-        const provider = new ethers.BrowserProvider(walletProvider as any);
+        const provider = new ethers.JsonRpcProvider(import.meta.env.VITE_COSTON2_RPC_URL);
         const Roulette: LuckySpinInstance = new Contract(LUCKY_SPIN_ADDRESS, LUCKY_SPIN_ABI, provider)
         setIsFetching(true)
         const result = await Roulette.getUserSpins(address)
@@ -123,8 +122,15 @@ const LuckySpinGame = () => {
          toast.error("Stake amount must be between 1-2")
          return;
         } 
+        console.log(numbers)
         if (numbers.length === 0) {
-          toast.error("Pick some numbers chief!")
+          toast.error("Pick some numbers, chief!")
+          return;
+        }
+        const allNumbers = numbers.every(el => typeof el === "number" && !isNaN(el));
+
+        if (!allNumbers) {
+          toast.error("Fill all numbers, chief!")
           return;
         }
         
@@ -211,7 +217,7 @@ const LuckySpinGame = () => {
                         setNumbers(newNumbers);
                       }}
                       className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-center text-sm focus:border-green-400 focus:outline-none"
-                      placeholder="1-50"
+                      placeholder="1-20"
                     />
                   </div>
                 ))}
@@ -271,7 +277,7 @@ const LuckySpinGame = () => {
                     <div key={index} className="grid grid-cols-4 gap-4 text-sm py-2">
                       <span className="text-gray-300">{spin.time}</span>
                       <span className="text-gray-300">{spin.predictions.join(', ')}</span>
-                      <span className="text-gray-300">{spin.matches} matches</span>
+                      <span className="text-gray-300">{spin.matches} matche(s)</span>
                       <span className={spin.prize.startsWith('+') ? 'text-green-400' : 'text-red-400'}>
                         {spin.prize}
                       </span>
@@ -385,7 +391,7 @@ const LuckySpinGame = () => {
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 rounded-full bg-green-400 mt-2 flex-shrink-0"></div>
-                  <span>Stake at least 5 FLR to play one round</span>
+                  <span>Stake at least 2 FLR to play one round</span>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 rounded-full bg-green-400 mt-2 flex-shrink-0"></div>
@@ -397,7 +403,7 @@ const LuckySpinGame = () => {
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 rounded-full bg-green-400 mt-2 flex-shrink-0"></div>
-                  <span>Match 3 numbers: Win {(stakeAmount*5)} FLR</span>
+                  <span>Match 3 numbers: Win {(stakeAmount * 5)} FLR</span>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 rounded-full bg-green-400 mt-2 flex-shrink-0"></div>
@@ -405,7 +411,7 @@ const LuckySpinGame = () => {
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 rounded-full bg-green-400 mt-2 flex-shrink-0"></div>
-                  <span>Match all 5 numbers: Win {(stakeAmount*15)} FLR</span>
+                  <span>Match all 5 numbers: Win {(stakeAmount*25)} FLR</span>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 rounded-full bg-red-400 mt-2 flex-shrink-0"></div>

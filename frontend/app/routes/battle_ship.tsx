@@ -71,11 +71,10 @@ const ZombieBattleship = () => {
     }
     
     try {
-        const provider = new ethers.BrowserProvider(walletProvider as any);
+        const provider = new ethers.JsonRpcProvider(import.meta.env.VITE_COSTON2_RPC_URL);
         const BattleShip: BattleShipInstance = new Contract(BATTLE_SHIP_ADDRESS, BATTLE_SHIP_ABI, provider)
         setIsFetching(true)
         const result = await BattleShip.getUserDroneBattles(address)
-        console.log("battles", result)
         const wrappedResult = deepUnwrap(result)
         const recentBattles = wrappedResult.map(transformBattleData)
         // console.log("user recent battles", recentBattles)
@@ -144,14 +143,14 @@ const ZombieBattleship = () => {
                 prize: isHit ? `+${formatEther(prize)} FLR` : `-${formatEther(prize)} FLR`
             });
 
+            setIsAttacking(false);
             setTimeout(() => {
-                setIsAttacking(false);
                 setRefetch(true);
                 setSelectedBox(NaN)
                 setZombieGrid(Array(16).fill(true));
                 setExplodingBox(NaN);
                 setTargetBox(NaN);
-            }, 1500);
+            }, 2000);
         } else toast.error("Unable to fetch battle result")
         
     } catch (error) {

@@ -50,7 +50,7 @@ const MyWallet = () => {
     const tokenAddress = "0xC67DCE33D7A8efA5FfEB961899C73fe01bCe9273";
     const usdtAddress = "0x7CeB76EDd5fB3c9D1190a8407640A22020175B69";
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum as any)
+      const provider = new ethers.JsonRpcProvider(import.meta.env.VITE_COSTON2_RPC_URL)
       // Create contract instance
       const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
       const usdtContract = new ethers.Contract(usdtAddress, ERC20_ABI, provider);
@@ -68,7 +68,6 @@ const MyWallet = () => {
       // Format balance from wei to human readable
       const formattedBalance = ethers.formatUnits(balance, decimals);
       const formattedUsdtBalance = ethers.formatUnits(_usdtBalance, _usdtdecimals);
-      console.log(formattedUsdtBalance)
       setWFlrBalance(formattedBalance)
       setUsdtBalance(formattedUsdtBalance)
       
