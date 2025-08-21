@@ -7,7 +7,7 @@ import {
     IFdcVerificationInstance,
 } from "../../typechain-types";
 import { ethers } from "ethers";
-import IFdcRequestFeeConfigurations from "../../artifacts/@flarenetwork/flare-periphery-contracts/coston2/IFdcRequestFeeConfigurations.sol/IFdcRequestFeeConfigurations.json";
+import IFdcRequestFeeConfigurations from "IFdcRequestFeeConfigurations.json";
 
 export async function getFdcRequestFee(abiEncodedRequest: string) {
   const address = await getContractAddressByName("FdcRequestFeeConfigurations");

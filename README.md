@@ -90,7 +90,7 @@ The Games lounge BattleShip is a game that allows users (Be it passengers or ran
 
 <img src="/battleship.png" alt="Battle Ship UI">
 
-## Wallet Feature (A simple addition of depositing FLR tokens for WFLR and vice-versa)
+## Wallet Feature
 
 The Wallet UI allows users to view their FLR, WFLR and USDT tokens balance.
 There is a built in functionality for users to deposit their FLR tokens for WFLR, as well as withdrawing it for FLR tokens.

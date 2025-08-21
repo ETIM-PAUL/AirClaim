@@ -4,7 +4,7 @@ import { ethers, Contract, BrowserProvider, BigNumberish, formatEther, parseEthe
 import { toast } from 'react-toastify';
 import Sidebar from '~/components/Sidebar';
 import { useGeneral } from '~/context/GeneralContext';
-import { abi as LUCKY_SPIN_ABI } from "../../../artifacts/contracts/LuckySpin/LuckySpin.sol/LuckySpin.json"
+import { abi as LUCKY_SPIN_ABI } from "../../../contracts_artifacts/LuckySpin/LuckySpin.sol/LuckySpin.json"
 import { LuckySpinInstance } from "../../../typechain-types"
 import { formatLocalized } from '~/utils';
 import { fromUnixTime } from 'date-fns';
@@ -23,7 +23,7 @@ interface RouletteSpins {
 const LuckySpinGame = () => {
   const { isSidebarCollapsed } = useGeneral();
   const [numbers, setNumbers] = useState<number[]>(Array(5).fill(''));
-  const [stakeAmount, setStakeAmount] = useState(5);
+  const [stakeAmount, setStakeAmount] = useState(2);
   const [isSpinning, setIsSpinning] = useState(false);
   // const [currentResult, setCurrentResult] = useState(['--', '--', '--', '--', '--']);
   const [wheelRotation, setWheelRotation] = useState(0);

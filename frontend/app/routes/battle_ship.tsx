@@ -7,7 +7,7 @@ import { toast } from 'react-toastify';
 import Sidebar from '~/components/Sidebar';
 import { useGeneral } from '~/context/GeneralContext';
 import { ethers, Contract, BrowserProvider, BigNumberish, formatEther, parseEther } from 'ethers';
-import { abi as BATTLE_SHIP_ABI } from "../../../artifacts/contracts/BattleShip/BattleShip.sol/BattleShip.json"
+import { abi as BATTLE_SHIP_ABI } from "../../../contracts_artifacts/BattleShip/BattleShip.sol/BattleShip.json"
 import { BattleShipInstance } from "../../../typechain-types"
 import { formatLocalized } from '~/utils';
 import { fromUnixTime } from 'date-fns';

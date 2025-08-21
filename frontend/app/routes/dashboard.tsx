@@ -162,8 +162,8 @@ const Dashboard = () => {
           <StatCard title="Insured Flights" value={allFlights?.length} change="12.5%" positive icon={<FaPlane className="text-green-400 text-2xl" />} />
           <StatCard title="Total Amount Insured" value={allFlights?.reduce((total:number, item:any) => {
                     const ticketPrice = item.insuredAmount;
-                    return total + Number(ticketPrice);
-                  }, 0).toString() + " FLR"} change="8.3%" positive icon={<FaDollarSign className="text-green-400 text-2xl" />} />
+                    return (total + Number(ticketPrice))
+                  }, 0).toFixed(2) + " FLR"} change="8.3%" positive icon={<FaDollarSign className="text-green-400 text-2xl" />} />
           <StatCard title="Passengers Insured" value={allFlights?.reduce((total:number, item:any) => {
                     const flightPassengers = item.passengers;
                     return total + Number(flightPassengers);
