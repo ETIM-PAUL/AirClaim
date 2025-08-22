@@ -8,7 +8,7 @@ import { insuredFlightsAgencyAddress } from "~/utils";
 import insuredFlightsAgencyAbi from 'insuredFlightsAgency.json';
 // import IJsonApiVerificationAbi from 'IJsonApiVerification.json';
 import Web3 from 'web3';
-import IWeb2JsonVerification from "../../artifacts/@flarenetwork/flare-periphery-contracts/coston2/IWeb2JsonVerification.sol/IWeb2JsonVerification.json";
+import IWeb2JsonVerification from "IWeb2JsonVerification.json";
 
 
 // use ABI
