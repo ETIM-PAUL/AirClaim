@@ -17,7 +17,7 @@ import { checkFlightDelayAction } from 'scripts/updateFlight';
 
 const FlightDetailsPage = () => {
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
-  const { address } = useAppKitAccount(); // Use reown's wallet hooks
+  const { address, isConnected } = useAppKitAccount(); // Use reown's wallet hooks
   const [participateInPrediction, setParticipateInPrediction] = useState(true);
   const [claimInUsdt, setClaimInUsdt] = useState(false);
   const [prediction, setPrediction] = useState(0);
@@ -35,45 +35,6 @@ const FlightDetailsPage = () => {
   const params:any = useParams();
 
   const iface:any = useMemo(() => new ethers.Interface(insuredFlightsAgencyAbi.abi), [insuredFlightsAgencyAbi.abi]);
-  // const [flight, setFlight] = useState<any>({
-  //   id: "1",
-  //   flightNumber: "UA-482",
-  //   airline: "United Airlines",
-  //   airlineICAO: "UAL",
-  //   airlineImage: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/United_Airlines_logo_2010.svg/1200px-United_Airlines_logo_2010.svg.png",
-  //   aircraftName: "Boeing 737-800",
-  //   flightDate: "2023-10-15",
-  //   departureAirport: "JFK",
-  //   arrivalAirport: "LAX",
-  //   flightStatus: "Delayed",
-  //   insurer: "AirClaim Insurance",
-  //   passengers: 2,
-  //   passengersList: [
-  //     {
-  //       name: "John Doe",
-  //       walletAddress: "0x1234567890123456789012345678901234567890",
-  //       ticketType: "Economy",
-  //       ticketPrice: "600",
-  //       insuredAmount: "280",
-  //       claimed: "Yes",
-  //       predictionInclusive: "Yes",
-  //       won: "No",
-  //     },
-  //     {
-  //       name: "Jane Doe",
-  //       walletAddress: "0x1234567890123456789012345678901234567890",
-  //       ticketType: "Economy",
-  //       ticketPrice: "600",
-  //       insuredAmount: "280",
-  //       claimed: "Yes",
-  //       predictionInclusive: "No",
-  //       won: "n/a",
-  //     },
-  //   ],
-  //   insuredAmount: "560",
-  //   claimedFLR: "280",
-  //   predictionFLRWon: "100"
-  // });
 
   const flight = allFlights.find((flight:any) => flight.id === Number(params?.id))
   const handleCheckFlightStatus = () => {
@@ -103,10 +64,16 @@ const FlightDetailsPage = () => {
 
   const handleClaim = async () => {
     const i = allPassengers.findIndex((item:any) => (item[0].toLowerCase() === address?.toLowerCase() && Number(item[3]) === Number(params?.id)))
+    
     if (i === -1) {
       toast.error("ooops, not a passenger on this flight");
       return;
     }
+    if (!isConnected) {
+      toast.error("Please connect your wallet to claim insurance")
+      return;
+    }
+    
 
     try {
       setProcessing(true);

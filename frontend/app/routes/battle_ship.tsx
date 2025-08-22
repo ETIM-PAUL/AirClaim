@@ -35,7 +35,7 @@ const ZombieBattleship = () => {
   const [zombieGrid, setZombieGrid] = useState(Array(16).fill(true)); // true means zombie alive
   const [recentBattles, setRecentBattles] = useState<RecentBattle[]>([]);
 
-  const { address } = useAppKitAccount()
+  const { address, isConnected } = useAppKitAccount()
   const { walletProvider } = useAppKitProvider("eip155")
   
   useEffect(() => {
@@ -98,6 +98,9 @@ const ZombieBattleship = () => {
 
   const dropDrone = async () => {
     try {
+        if (!isConnected) {
+            toast.error("Please connect your wallet to play the game")
+        }
         if (stakeAmount > 2 || stakeAmount < 1) {
          toast.error("Stake amount must be between 1-2")
          return;

@@ -32,7 +32,7 @@ const LuckySpinGame = () => {
   const [isFetching, setIsFetching] = useState(false);
   const [refetch, setRefetch] = useState(false);
 
-  const { address } = useAppKitAccount()
+  const { address, isConnected } = useAppKitAccount()
   const { walletProvider } = useAppKitProvider("eip155")
   
   useEffect(() => {
@@ -118,6 +118,9 @@ const LuckySpinGame = () => {
 
   const spinWheel = async () => {
     try {
+      if (!isConnected) {
+        toast.error("Please connect your wallet to play the game")
+      }
         if (stakeAmount > 2 || stakeAmount < 1) {
          toast.error("Stake amount must be between 1-2")
          return;
