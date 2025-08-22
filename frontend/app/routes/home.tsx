@@ -26,17 +26,17 @@ const App: React.FC = () => {
     {
       question: "How does the FLR token reward system work?",
       answer:
-        "When your flight is delayed and you initiate a claim, you'll be invited to play our prediction game. You'll select a series of numbers, and if they match our randomly generated numbers, you win FLR tokens. The more matches you get, the higher your reward. These tokens can be withdrawn to your crypto wallet or used for future insurance purchases."
+        "When your flight is delayed and you initiate a claim, you'll be invited to play our prediction game. You'll select a series of numbers (0-20), and if they match our secret number, you win FLR tokens and your full insurance."
     },
     {
       question: "How quickly will I receive compensation for delays?",
       answer:
-        "For verified delays, compensation is typically processed within 24 hours of the claim. In many cases, you'll receive payment while still at the airport or shortly after landing. Our automated system tracks flight data in real-time, allowing for quick verification and processing."
+        "For verified delays, compensation is typically processed as soon as delay status is read from the our flight API data source. In many cases, you'll receive payment while still at the airport. You also have the option of claiming your insurance in USDT (If we have sufficient funds). Our system tracks flight data in real-time, allowing for quick verification and processing."
     },
     {
       question: "Can I insure flights I've already booked?",
       answer:
-        "Yes, you can purchase insurance for flights you've already booked as long as the departure is at least 24 hours away. Simply enter your flight details in the app, and we'll provide coverage options based on your itinerary."
+        "Yes, your airline can purchase insurance for flights you've already booked as long as the flight is still scheduled and delay time is still 0. Simply enter your flight details in the app, and we'll provide coverage options based on your itinerary."
     },
   ];
 
@@ -145,7 +145,7 @@ const App: React.FC = () => {
                   </span>
                 </h1>
                 <p className="text-xl text-gray-300 leading-relaxed">
-                  Airclaim helps you get insurance for flight delay claim compensation, and win FLR tokens by predicting lucky numbers during your claim process.
+                  Airclaim helps you get insurance for flight delays, claim compensation (in either FLR or USDT tokens), win FLR tokens by predicting lucky numbers during your claim process and participate in our games lounge (Battleship and LuckySpin) to win more FLR.
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-4">
@@ -162,7 +162,7 @@ const App: React.FC = () => {
                     <div key={i} className="w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full border-2 border-black"></div>
                   ))}
                 </div>
-                <span>Join 10,000+ travelers already using Airclaim</span>
+                <span>Join 1000+ travelers already using Airclaim</span>
               </div>
             </div>
             <div className="relative">
@@ -361,7 +361,7 @@ const App: React.FC = () => {
           <div className="bg-[#101010] border border-zinc-800 rounded-lg p-6 text-left">
             <div className="text-green-400 mb-2">★★★★★</div>
             <p className="text-gray-300 mb-4">
-              "My flight was delayed by 3 hours, but I won 75 FLR tokens while waiting! The claim process was completely automated and the compensation arrived before I even landed."
+              "My flight was delayed by 3 hours, but I won 25 FLR tokens while waiting by playing the lucky spin game! The claim process was completely automated and the compensation arrived before I was even onboarded."
             </p>
             <div className="avatar_container flex justify-start justify-center align-center">
               <img
@@ -402,7 +402,7 @@ const App: React.FC = () => {
           <div className="bg-[#101010] border border-zinc-800 rounded-lg p-6 text-left">
             <div className="text-green-400 mb-2">★★★★★</div>
             <p className="text-gray-300 mb-4">
-              "I've tried other flight insurance apps, but Airclaim is by far the best. The token rewards are a unique touch, and their claim process is completely hassle-free."
+              "I've tried other flight insurance apps, but Airclaim is by far the best. The insurance claim in USDT stable coin is a unique touch, and their claim process is completely hassle-free."
             </p>
             <div className='justify-start justify-center align-center'>
             <img
